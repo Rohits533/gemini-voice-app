@@ -196,28 +196,22 @@ if menu_selection == "🏠 Home Workspace":
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown(
-            """
+        st.markdown("""
             <div class="hero-card">
                 <span style="color:#ec4899; text-transform:uppercase; font-size:0.75rem; font-weight:700; letter-spacing:1px;">Core Pipeline</span>
                 <h2 style="margin-top:5px; margin-bottom:8px; font-weight:800; color:#fff;">Gemini 2.5 Engine</h2>
                 <p style="color:#9ca3af; font-size:0.95rem; margin-bottom:0;">Multimodal context analytics system optimized and ready.</p>
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        """, unsafe_allow_html=True)
 
     with col2:
-        st.markdown(
-            """
+        st.markdown("""
             <div class="hero-card" style="background: linear-gradient(135deg, #281534, #110917);">
                 <span style="color:#a855f7; text-transform:uppercase; font-size:0.75rem; font-weight:700; letter-spacing:1px;">Latency Profile</span>
                 <h2 style="margin-top:5px; margin-bottom:8px; font-weight:800; color:#fff;">Realtime Session</h2>
                 <p style="color:#caa5e6; font-size:0.95rem; margin-bottom:0;">Low-latency context loops running live.</p>
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        """, unsafe_allow_html=True)
 
     st.markdown(
         '<br><h2 style="font-weight:800; margin-bottom:1rem; letter-spacing:-0.5px;">Voice + Chat Input</h2>',
@@ -274,8 +268,7 @@ elif menu_selection == "📖 Engineering Guide":
         unsafe_allow_html=True,
     )
 
-    st.markdown(
-        """
+    st.markdown("""
         <div class="hero-card">
             <h3 style="color:#fff; font-weight:700; margin-bottom:10px;">🛠️ The Technology Stack</h3>
             <span class="tech-badge">Python 3.11</span>
@@ -287,9 +280,7 @@ elif menu_selection == "📖 Engineering Guide":
                 This app keeps both text chat and voice input, and routes each to Gemini.
             </p>
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    """, unsafe_allow_html=True)
 
 elif menu_selection == "ℹ️ About Application":
     st.markdown(
@@ -305,9 +296,14 @@ elif menu_selection == "ℹ️ About Application":
         """
         <div class="hero-card">
             <h3 style="color:#fff; font-weight:700; margin-bottom:10px;">About This App</h3>
+            <p style="color:#9ca3af; font-size:0.95rem; line-height:1.7; margin-bottom:12px;">
+                Hi, I’m Rohit Savan, 17 years old, from Mumbai.
+            </p>
             <p style="color:#9ca3af; font-size:0.95rem; line-height:1.7; margin-bottom:0;">
-                Savan Audio Lab supports both voice and text input. You can speak into the microphone or type a message,
-                and Gemini will generate the response inside the same chat workspace.
+                Portfolio:
+                <a href="https://rohits533.github.io" target="_blank" style="color:#ec4899; text-decoration:none; font-weight:700;">
+                    rohits533.github.io
+                </a>
             </p>
         </div>
         """,
