@@ -4,7 +4,7 @@ from google.genai import types
 
 # 1. Page Configuration
 st.set_page_config(
-    page_title="Gemini Audio Dashboard", 
+    page_title="Savan Audio Lab", 
     page_icon="🎙️", 
     layout="wide",
     initial_sidebar_state="expanded" 
@@ -107,7 +107,8 @@ if "chat_history" not in st.session_state:
 
 # 3. INTERACTIVE SIDEBAR (Home, About, and History Logs)
 with st.sidebar:
-    st.markdown('<h2 style="color:#fff; font-weight:800; margin-bottom:2rem; letter-spacing:-1px;">✨ Gemini Studio</h2>', unsafe_allow_html=True)
+    # 📝 YOUR NEW LINKED BRAND NAME:
+    st.markdown('<h2 style="color:#fff; font-weight:800; margin-bottom:2rem; letter-spacing:-1px;">✨ Savan Audio Lab</h2>', unsafe_allow_html=True)
     
     menu_selection = st.radio(
         "Navigation Links",
@@ -162,7 +163,6 @@ if menu_selection == "🏠 Home":
             st.markdown(message["text"])
 
 else:
-    # 🌟 UPDATED ABOUT SECTION 🌟
     st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">About Platform</h1>', unsafe_allow_html=True)
     st.markdown("""
         <div class="hero-card" style="margin-top:2rem;">
