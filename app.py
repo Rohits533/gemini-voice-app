@@ -52,6 +52,23 @@ st.markdown("""
         margin-bottom: 1rem;
     }
     
+    /* Portfolio Button Link Styling */
+    .portfolio-btn {
+        display: inline-block;
+        background: linear-gradient(135deg, #ec4899, #8b5cf6);
+        color: white !important;
+        font-weight: 600;
+        padding: 0.6rem 1.2rem;
+        border-radius: 8px;
+        text-decoration: none !important;
+        margin-top: 15px;
+        box-shadow: 0 4px 15px rgba(236,72,153,0.3);
+        transition: transform 0.2s ease;
+    }
+    .portfolio-btn:hover {
+        transform: translateY(-2px);
+    }
+    
     /* Fixed Audio Controller Footer Bar */
     .fixed-player-bar {
         position: fixed;
@@ -88,7 +105,7 @@ st.markdown("""
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# 3. INTERACTIVE SIDEBAR (Strictly Home, About, and History Logs)
+# 3. INTERACTIVE SIDEBAR (Home, About, and History Logs)
 with st.sidebar:
     st.markdown('<h2 style="color:#fff; font-weight:800; margin-bottom:2rem; letter-spacing:-1px;">✨ Gemini Studio</h2>', unsafe_allow_html=True)
     
@@ -100,13 +117,11 @@ with st.sidebar:
     st.markdown('<br><hr style="border-color: rgba(255,255,255,0.05);"><br>', unsafe_allow_html=True)
     st.markdown('<p style="font-size:0.75rem; color:#6b7280; text-transform:uppercase; font-weight:700; letter-spacing:1px; margin-bottom:12px;">📜 Chat History Logs</p>', unsafe_allow_html=True)
     
-    # Read-only historical chat strings rendering right inside the left drawer panel
     if not st.session_state.chat_history:
         st.markdown('<p style="font-size:0.85rem; color:#4b5563; font-style:italic;">No recent sessions found.</p>', unsafe_allow_html=True)
     else:
         for idx, msg in enumerate(st.session_state.chat_history):
             role_label = "👤 You" if msg["role"] == "user" else "✨ Assistant"
-            # Truncate text context length to maintain formatting layout balance
             short_text = msg["text"][:35] + "..." if len(msg["text"]) > 35 else msg["text"]
             st.markdown(f"""
                 <div class="sidebar-history-box">
@@ -147,15 +162,19 @@ if menu_selection == "🏠 Home":
             st.markdown(message["text"])
 
 else:
-    # Render clean static text when user selects the "About Application" option
+    # 🌟 UPDATED ABOUT SECTION 🌟
     st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">About Platform</h1>', unsafe_allow_html=True)
     st.markdown("""
         <div class="hero-card" style="margin-top:2rem;">
-            <h3 style="color:#fff; font-weight:700;">Enterprise Voice Assistant</h3>
-            <p style="color:#9ca3af; line-height:1.6;">
+            <h3 style="color:#fff; font-weight:700; margin-bottom:5px;">Enterprise Voice Assistant</h3>
+            <p style="color:#6b7280; font-size:0.9rem; font-weight:600; text-transform:uppercase; margin-bottom:15px; letter-spacing:0.5px;">
+                Built by Rohit Savan • 17-Year-Old Developer from Mumbai
+            </p>
+            <p style="color:#9ca3af; line-height:1.6; margin-bottom:20px;">
                 This platform compiles real-time voice and audio input processing routines through Google's Gemini Flash infrastructure. 
                 Designed for high-throughput deployment, it delivers ultra-low turn-taking latencies in a unified minimal environment.
             </p>
+            <a href="https://rohits533.github.io/" target="_blank" class="portfolio-btn">🌐 View My Portfolio</a>
         </div>
     """, unsafe_allow_html=True)
 
