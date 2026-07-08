@@ -292,20 +292,19 @@ elif menu_selection == "ℹ️ About Application":
         unsafe_allow_html=True,
     )
 
-    st.markdown(
-        """
+    st.markdown("""
         <div class="hero-card">
-            <h3 style="color:#fff; font-weight:700; margin-bottom:10px;">About This App</h3>
+            <h3 style="color:#fff; font-weight:700; margin-bottom:10px;">About This Application</h3>
             <p style="color:#9ca3af; font-size:0.95rem; line-height:1.7; margin-bottom:12px;">
-                Hi, I’m Rohit Savan, 17 years old, from Mumbai.
+                Savan Audio Lab is a modern AI voice and chat interface. It lets users speak or type a question, then sends it to Gemini for a fast response inside a polished workspace.
+            </p>
+            <p style="color:#9ca3af; font-size:0.95rem; line-height:1.7; margin-bottom:12px;">
+                The app includes a voice input flow, a text chat flow, session history, and a clean sidebar layout for easy navigation.
             </p>
             <p style="color:#9ca3af; font-size:0.95rem; line-height:1.7; margin-bottom:0;">
-                Portfolio:
-                <a href="https://rohits533.github.io" target="_blank" style="color:#ec4899; text-decoration:none; font-weight:700;">
-                    rohits533.github.io
-                </a>
+                Hi, I’m Rohit Savan, 17 years old, from Mumbai.
             </p>
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    """, unsafe_allow_html=True)
+
+    st.link_button("Visit My Portfolio", "https://rohits533.github.io")
