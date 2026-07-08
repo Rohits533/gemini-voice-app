@@ -7,32 +7,28 @@ st.set_page_config(
     page_title="Gemini Audio Dashboard", 
     page_icon="🎵", 
     layout="wide",
-    initial_sidebar_state="expanded" # Keep sidebar open natively
+    initial_sidebar_state="expanded" 
 )
 
-# 2. Advanced CSS to Style NATIVE Streamlit Sidebar and Interactive Elements
+# 2. Advanced CSS styling for Premium UI layout
 st.markdown("""
     <style>
-    /* Hide top header and default footer */
     [data-testid="stHeader"], footer { visibility: hidden; display: none; }
     
-    /* Premium Application Dark Gradient Background */
     .stApp {
         background: radial-gradient(circle at top right, #1f1b2e, #0f0c15 60%);
         color: #f3f4f6;
         font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     }
     
-    /* Make Native Sidebar Dark & Match the Design */
     [data-testid="stSidebar"] {
         background-color: #12101a !important;
         border-right: 1px solid rgba(255,255,255,0.03) !important;
         width: 260px !important;
     }
     
-    /* Style the native Streamlit Radio buttons to look like a premium playlist menu */
     div[data-testid="stRadio"] > label {
-        display: none; /* Hide default header label */
+        display: none; 
     }
     
     div[data-testid="stRadio"] [data-testid="stMarkdownContainer"] p {
@@ -42,13 +38,11 @@ st.markdown("""
         padding: 4px 0px;
     }
 
-    /* Style active item selector */
     div[data-testid="stRadio"] input[type="radio"]:checked + div p {
-        color: #ec4899 !important; /* Premium active pink */
+        color: #ec4899 !important; 
         font-weight: 600 !important;
     }
     
-    /* Card Elements Setup */
     .hero-card {
         background: linear-gradient(135deg, #1d182b, #110e1a);
         border: 1px solid rgba(255,255,255,0.04);
@@ -58,7 +52,6 @@ st.markdown("""
         margin-bottom: 1rem;
     }
     
-    /* Floating Media Player Controller Footer Bar */
     .fixed-player-bar {
         position: fixed;
         bottom: 0;
@@ -79,11 +72,10 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 3. INTERACTIVE SIDEBAR (Using Python State instead of raw HTML)
+# 3. INTERACTIVE SIDEBAR Navigation
 with st.sidebar:
     st.markdown('<h2 style="color:#fff; font-weight:800; margin-bottom:2rem; letter-spacing:-1px;">🎵 AudioStudio</h2>', unsafe_allow_html=True)
     
-    # These buttons are now fully functional and clickable python strings
     menu_selection = st.radio(
         "Navigation",
         ["🏠 Home", "✨ Recommendations", "🔥 New Releases", "📈 Top Charts", "📻 Radio"]
@@ -95,7 +87,7 @@ with st.sidebar:
         ["✨ Best Hits of Mine", "🔥 Recent AI Generations"]
     )
 
-# 4. MAIN WINDOW WORKSPACE (Changes dynamically based on what you click!)
+# 4. MAIN DASHBOARD SPACE
 st.markdown(f'<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">{menu_selection}</h1>', unsafe_allow_html=True)
 st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">Speak or type below to compile real-time speech assets natively.</p>', unsafe_allow_html=True)
 
@@ -121,7 +113,7 @@ with col2:
     
 st.markdown('<br><h2 style="font-weight:800; margin-bottom:1.5rem; letter-spacing:-0.5px;">Conversation Logs</h2>', unsafe_allow_html=True)
 
-# 5. CORE VOICE PIPELINE BACKEND
+# 5. INITIALIZE GEMINI CORE ENGINE
 api_key = st.secrets.get("GEMINI_API_KEY")
 if not api_key:
     st.error("🔑 API Key Missing. Please set your GEMINI_API_KEY value inside Streamlit Cloud Secrets.")
@@ -136,7 +128,7 @@ for message in st.session_state.chat_history:
     with st.chat_message(message["role"]):
         st.markdown(message["text"])
 
-# 6. FIXED AUDIO CONTROLLER TASKBAR
+# 6. FIXED STICKY AUDIO CONTROLLER TASKBAR
 st.markdown('<div class="fixed-player-bar">', unsafe_allow_html=True)
 f_col1, f_col2 = st.columns([1, 2])
 
@@ -146,7 +138,7 @@ with f_col1:
             <div style="background: linear-gradient(135deg, #ec4899, #8b5cf6); width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; box-shadow: 0 4px 12px rgba(236,72,153,0.3);">AI</div>
             <div>
                 <p style="margin:0; font-weight:600; font-size:0.95rem; color:#fff;">Gemini Realtime Engine</p>
-                <p style="margin:0; color:#10b981; font-size:0.75rem; font-weight:600;">● Online & Streaming</p>
+                <p style="margin:0; color:#10b981; font-size:0.75rem; font-weight:600;">● Online & Stable</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -156,7 +148,7 @@ with f_col2:
 
 st.markdown('</div>', unsafe_allow_html=True)
 
-# 7. EXECUTION REQUEST HOOK
+# 7. EXECUTION REQUEST PROMPTING HOOK
 if prompt:
     user_text = prompt.text if hasattr(prompt, 'text') else prompt.get("text", "")
     uploaded_audio = prompt.audio if hasattr(prompt, 'audio') else prompt.get("audio")
@@ -175,17 +167,22 @@ if prompt:
         st.session_state.chat_history.append({"role": "user", "text": user_text})
         
         try:
-            contents_payload.append("Keep response under 2 sentences.")
-            response = client.models.generate_content(model='gemini-2.5-flash', contents=contents_payload)
+            # Explicit system instruction passed cleanly inside standard generation configuration rules
+            contents_payload.append(
+                "You are an elegant, elite AI voice companion just like Siri or Gemini Live. "
+                "Process the input query and provide a sophisticated response. Keep it concise "
+                "(under 2 sentences)."
+            )
+            
+            response = client.models.generate_content(
+                model='gemini-2.5-flash', 
+                contents=contents_payload
+            )
             ai_text_summary = response.text
             
-            tts_response = client.models.generate_content(model='gemini-2.5-flash-tts', contents=f"Say naturally: {ai_text_summary}")
-            audio_parts = [part for part in tts_response.candidates[0].content.parts if part.inline_data and part.inline_data.mime_type.startswith("audio/")]
-            
+            # Log the text answer beautifully inside the conversation panel framework
             st.session_state.chat_history.append({"role": "assistant", "text": ai_text_summary})
-            if audio_parts:
-                st.audio(audio_parts[0].inline_data.data, format="audio/mp3", autoplay=True)
-                
             st.rerun()
+            
         except Exception as e:
-            st.error(f"Error: {e}")
+            st.error(f"Error executing logic sequence: {e}")
