@@ -11,10 +11,10 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. Immersive Spotify/Apple Music Style Premium Theme CSS
+# 2. Complete CSS Fix - Resolving Text Overlap Problems
 st.markdown("""
     <style>
-    /* Absolute reset to hide default Streamlit structures */
+    /* Total reset to hide standard Streamlit container boundaries */
     [data-testid="stHeader"], footer, [data-testid="stSidebar"] { visibility: hidden; display: none; }
     
     .stApp {
@@ -23,73 +23,59 @@ st.markdown("""
         font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     }
     
-    /* Global Content Box Adjustment */
+    /* Make sure Streamlit's internal layout padding starts after our custom 260px sidebar */
     .block-container {
         padding: 0rem !important;
         max-width: 100% !important;
     }
     
-    /* Sidebar Navigation panel styling */
+    /* Strict Column/Sidebar Position Rules */
     .nav-sidebar {
         background-color: #12101a;
         height: 100vh;
-        padding: 2rem 1.5rem;
+        padding: 2.5rem 1.5rem;
         border-right: 1px solid rgba(255,255,255,0.03);
         position: fixed;
-        width: 240px;
+        width: 260px;
         left: 0;
         top: 0;
+        z-index: 999;
     }
+    
     .nav-item {
         padding: 0.75rem 1rem;
         color: #9ca3af;
         font-weight: 500;
         border-radius: 8px;
-        cursor: pointer;
         margin-bottom: 0.25rem;
+        font-size: 0.95rem;
     }
     .nav-item.active {
-        background: linear-gradient(90deg, rgba(236,72,153,0.15), transparent);
+        background: linear-gradient(90deg, rgba(236,72,153,0.12), transparent);
         color: #ec4899;
         border-left: 3px solid #ec4899;
+        font-weight: 600;
     }
     
-    /* Main Content Wrapper Window */
-    .main-dashboard {
-        margin-left: 260px;
-        padding: 2.5rem;
-        margin-bottom: 120px; /* Spacer for fixed footer player */
+    /* Content Padding to Prevent Layout Collisions */
+    .dashboard-main-content {
+        padding-left: 300px !important;  /* Strict margin pushing text past sidebar */
+        padding-right: 40px !important;
+        padding-top: 3rem !important;
+        padding-bottom: 8rem !important;
     }
     
-    /* Section Headers */
-    .dashboard-title {
-        font-size: 2.5rem;
-        font-weight: 800;
-        letter-spacing: -1px;
-        margin-bottom: 0.5rem;
-    }
-    
-    /* Main Hero Featured Cards */
-    .hero-container {
-        display: flex;
-        gap: 1.5rem;
-        margin-bottom: 2.5rem;
-    }
+    /* Card Elements matching reference design */
     .hero-card {
-        background: linear-gradient(135deg, #2e1a47, #160f24);
-        border: 1px solid rgba(255,255,255,0.05);
-        border-radius: 20px;
-        padding: 1.5rem;
-        flex: 1;
+        background: linear-gradient(135deg, #1d182b, #110e1a);
+        border: 1px solid rgba(255,255,255,0.04);
+        border-radius: 16px;
+        padding: 1.75rem;
         box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        position: relative;
-        overflow: hidden;
-    }
-    .hero-card-pink {
-        background: linear-gradient(135deg, #5c2568, #200b2b);
+        margin-bottom: 1rem;
     }
     
-    /* Media Player Fixed Controller Footer Bar */
+    /* Media Player Bar Bottom Fix */
     .fixed-player-bar {
         position: fixed;
         bottom: 0;
@@ -102,110 +88,103 @@ st.markdown("""
         box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
     }
     
-    /* Re-route native Chat Input element styling to become the audio search trigger bar */
     [data-testid="stChatInput"] {
         background-color: #1a1626 !important;
         border: 1px solid rgba(255,255,255,0.1) !important;
         border-radius: 30px !important;
-        padding: 0.5rem 1rem !important;
     }
-    
     </style>
 """, unsafe_allow_html=True)
 
 # 3. Sidebar UI Layout Component 
 st.markdown("""
     <div class="nav-sidebar">
-        <h3 style="color:#fff; font-weight:800; margin-bottom:2rem; letter-spacing:-1px;">🎵 AudioStudio</h3>
+        <h2 style="color:#fff; font-weight:800; margin-bottom:2.5rem; letter-spacing:-1px;">🎵 AudioStudio</h2>
         <div class="nav-item active">🏠 Home</div>
         <div class="nav-item">✨ Recommendations</div>
         <div class="nav-item">🔥 New Releases</div>
         <div class="nav-item">📈 Top Charts</div>
         <div class="nav-item">📻 Radio</div>
-        <br>
-        <p style="font-size:0.75rem; color:#4b5563; text-transform:uppercase; font-weight:700; padding-left:1rem;">Playlists</p>
+        <br><br>
+        <p style="font-size:0.75rem; color:#4b5563; text-transform:uppercase; font-weight:700; padding-left:1rem; letter-spacing:1px;">Playlists</p>
         <div class="nav-item" style="font-size:0.9rem;">✨ Best Hits of Mine</div>
         <div class="nav-item" style="font-size:0.9rem;">🔥 Recent AI Generations</div>
     </div>
 """, unsafe_allow_html=True)
 
-# 4. Main Window Content Area
-st.markdown('<div class="main-dashboard">', unsafe_allow_html=True)
+# 4. Content Area Container Wrapper
+# Everything inside this container gets padded cleanly away from the sidebar
+with st.container():
+    st.markdown('<div class="dashboard-main-content">', unsafe_allow_html=True)
+    
+    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">Discover Voice Assets</h1>', unsafe_allow_html=True)
+    st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">Speak or type below to compile real-time speech assets natively.</p>', unsafe_allow_html=True)
+    
+    # Grid Content Rows using native safe metrics
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("""
+            <div class="hero-card">
+                <span style="color:#ec4899; text-transform:uppercase; font-size:0.75rem; font-weight:700; letter-spacing:1px;">Featured Agent</span>
+                <h2 style="margin-top:5px; margin-bottom:8px; font-weight:800; color:#fff;">Jose Carreras</h2>
+                <p style="color:#9ca3af; font-size:0.95rem; margin-bottom:0;">Bel canto ambient generation preset active.</p>
+            </div>
+        """, unsafe_allow_html=True)
 
-# Top Premium Greetings Header
-st.markdown('<p class="dashboard-title">Discover Voice Assets</p>', unsafe_allow_html=True)
-st.markdown('<p style="color:#9ca3af; margin-bottom:2rem;">Speak to compile custom synthesized speech layouts instantly.</p>', unsafe_allow_html=True)
+    with col2:
+        st.markdown("""
+            <div class="hero-card" style="background: linear-gradient(135deg, #281534, #110917);">
+                <span style="color:#a855f7; text-transform:uppercase; font-size:0.75rem; font-weight:700; letter-spacing:1px;">Active Pipeline</span>
+                <h2 style="margin-top:5px; margin-bottom:8px; font-weight:800; color:#fff;">Best Day Voice Suite</h2>
+                <p style="color:#caa5e6; font-size:0.95rem; margin-bottom:0;">Low-latency audio synthesis engine online.</p>
+            </div>
+        """, unsafe_allow_html=True)
+        
+    st.markdown('<br><h2 style="font-weight:800; margin-bottom:1.5rem; letter-spacing:-0.5px;">Conversation Logs</h2>', unsafe_allow_html=True)
+    
+    # Core backend memory array engine
+    api_key = st.secrets.get("GEMINI_API_KEY")
+    if not api_key:
+        st.error("🔑 API Key Missing. Please set your GEMINI_API_KEY value inside Streamlit Cloud Secrets.")
+        st.stop()
+        
+    client = genai.Client(api_key=api_key)
+    
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+        
+    for message in st.session_state.chat_history:
+        with st.chat_message(message["role"]):
+            st.markdown(message["text"])
+            
+    st.markdown('</div>', unsafe_allow_html=True) # Close dashboard-main-content wrapper
 
-# Visual Grid Mockup Layout matching user image choice
-col1, col2 = st.columns(2)
-with col1:
-    st.markdown("""
-        <div class="hero-card">
-            <span style="color:#ec4899; text-transform:uppercase; font-size:0.75rem; font-weight:700;">Featured Agent</span>
-            <h2 style="margin-top:5px; margin-bottom:5px; font-weight:800;">Jose Carreras</h2>
-            <p style="color:#9ca3af; font-size:0.9rem;">Bel canto ambient generation preset active.</p>
-        </div>
-    """, unsafe_allow_html=True)
-
-with col2:
-    st.markdown("""
-        <div class="hero-card hero-card-pink">
-            <span style="color:#a855f7; text-transform:uppercase; font-size:0.75rem; font-weight:700;">Active Pipeline</span>
-            <h2 style="margin-top:5px; margin-bottom:5px; font-weight:800;">Best Day Voice Suite</h2>
-            <p style="color:#e9d5ff; font-size:0.9rem;">Low-latency audio synthesis engine online.</p>
-        </div>
-    """, unsafe_allow_html=True)
-
-st.markdown('<br><h3 style="font-weight:700; margin-bottom:1rem;">Conversation History Logs</h3>', unsafe_allow_html=True)
-
-# 5. Core Voice/Logic System Configuration
-api_key = st.secrets.get("GEMINI_API_KEY")
-if not api_key:
-    st.error("🔑 API Key Missing. Please insert GEMINI_API_KEY inside Streamlit Cloud Secrets panel.")
-    st.stop()
-
-client = genai.Client(api_key=api_key)
-
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-
-# Output the running chat dialogue feed inside clear styled blocks
-for message in st.session_state.chat_history:
-    with st.chat_message(message["role"]):
-        st.markdown(message["text"])
-
-st.markdown('</div>', unsafe_allow_html=True) # Closing Main Dashboard tag wrapper
-
-# 6. Fixed Player Controller Footer System
+# 5. Fixed Audio Controller Taskbar Bar
 st.markdown('<div class="fixed-player-bar">', unsafe_allow_html=True)
-
-# Grid to position the prompt controller nicely along the bottom axis
 f_col1, f_col2 = st.columns([1, 2])
 
 with f_col1:
     st.markdown("""
-        <div style="display:flex; align-items:center; gap:12px; margin-top:5px;">
-            <div style="background-color:#c084fc; width:45px; height:45px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:800;">AI</div>
+        <div style="display:flex; align-items:center; gap:14px; margin-top:8px; margin-left:15px;">
+            <div style="background: linear-gradient(135deg, #ec4899, #8b5cf6); width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; box-shadow: 0 4px 12px rgba(236,72,153,0.3);">AI</div>
             <div>
-                <p style="margin:0; font-weight:600; font-size:0.95rem;">Gemini Realtime Engine</p>
-                <p style="margin:0; color:#9ca3af; font-size:0.75rem;">Status: Ready to stream</p>
+                <p style="margin:0; font-weight:600; font-size:0.95rem; color:#fff;">Gemini Realtime Engine</p>
+                <p style="margin:0; color:#10b981; font-size:0.75rem; font-weight:600;">● Online & Streaming</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
 
 with f_col2:
-    # Anchor the Streamlit unified mic/text selector directly inside the right panel segment
-    prompt = st.chat_input("Speak or Type your search layout...", accept_audio=True)
+    prompt = st.chat_input("Speak or Type your query...", accept_audio=True)
 
-st.markdown('</div>', unsafe_allow_html=True) # Closing Fixed Player Bar layout
+st.markdown('</div>', unsafe_allow_html=True)
 
-# 7. Execution Engine Action Handler
+# 6. Request Generation Cycle Hook
 if prompt:
     user_text = prompt.text if hasattr(prompt, 'text') else prompt.get("text", "")
     uploaded_audio = prompt.audio if hasattr(prompt, 'audio') else prompt.get("audio")
     
     contents_payload = []
-    
     if uploaded_audio:
         audio_data_bytes = uploaded_audio.read()
         contents_payload.append(types.Part.from_bytes(data=audio_data_bytes, mime_type="audio/wav"))
@@ -220,31 +199,16 @@ if prompt:
         
         try:
             contents_payload.append("Keep response under 2 sentences.")
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=contents_payload
-            )
+            response = client.models.generate_content(model='gemini-2.5-flash', contents=contents_payload)
             ai_text_summary = response.text
             
-            # Synthesize voice feedback loop
-            tts_response = client.models.generate_content(
-                model='gemini-2.5-flash-tts',
-                contents=f"Say naturally: {ai_text_summary}"
-            )
+            tts_response = client.models.generate_content(model='gemini-2.5-flash-tts', contents=f"Say naturally: {ai_text_summary}")
+            audio_parts = [part for part in tts_response.candidates[0].content.parts if part.inline_data and part.inline_data.mime_type.startswith("audio/")]
             
-            audio_parts = [
-                part for part in tts_response.candidates[0].content.parts 
-                if part.inline_data and part.inline_data.mime_type.startswith("audio/")
-            ]
-            
-            # Append response and force immediate refresh to autoplay audio
             st.session_state.chat_history.append({"role": "assistant", "text": ai_text_summary})
-            
             if audio_parts:
-                # Store voice binary temporarily to kickstart autoplay upon context refresh
                 st.audio(audio_parts[0].inline_data.data, format="audio/mp3", autoplay=True)
                 
             st.rerun()
-
         except Exception as e:
-            st.error(f"Error handling request: {e}")
+            st.error(f"Error: {e}")
