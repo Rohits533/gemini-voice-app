@@ -14,6 +14,9 @@ st.set_page_config(
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
+if "pending_audio" not in st.session_state:
+    st.session_state.pending_audio = None
+
 st.markdown("""
 <style>
 [data-testid="stHeader"], footer { visibility: hidden; display: none; }
@@ -180,42 +183,34 @@ if menu_selection == "🏠 Home Workspace":
         with st.chat_message(message["role"], avatar=avatar_icon):
             st.markdown(message["text"])
 
-    user_text = None
-    user_mode = None
-
     if text_input:
-        user_text = text_input
-        user_mode = "text"
+        st.session_state.chat_history.append({"role": "user", "text": text_input})
+        with st.chat_message("user", avatar="👤"):
+            st.markdown(text_input)
 
-    if voice_audio is not None:
-        voice_bytes = voice_audio.read()
-        st.audio(voice_bytes, format="audio/wav")
-        user_mode = "voice"
+        with st.chat_message("assistant", avatar="✨"):
+            with st.spinner("Processing system context..."):
+                response_content = safe_generate_text(text_input)
+
+            if response_content:
+                st.markdown(response_content)
+                st.session_state.chat_history.append({"role": "assistant", "text": response_content})
+                st.rerun()
+
+    elif voice_audio is not None:
+        audio_bytes = voice_audio.read()
+        st.audio(audio_bytes, format="audio/wav")
 
         with st.chat_message("user", avatar="👤"):
             st.markdown("🎤 Voice question recorded")
 
         with st.chat_message("assistant", avatar="✨"):
             with st.spinner("Gemini is listening..."):
-                response_content = safe_generate_audio(voice_bytes)
+                response_content = safe_generate_audio(audio_bytes)
 
             if response_content:
                 st.markdown(response_content)
                 st.session_state.chat_history.append({"role": "user", "text": "🎤 Voice question recorded"})
-                st.session_state.chat_history.append({"role": "assistant", "text": response_content})
-                st.rerun()
-
-    if user_text and user_mode == "text":
-        st.session_state.chat_history.append({"role": "user", "text": user_text})
-        with st.chat_message("user", avatar="👤"):
-            st.markdown(user_text)
-
-        with st.chat_message("assistant", avatar="✨"):
-            with st.spinner("Processing system context..."):
-                response_content = safe_generate_text(user_text)
-
-            if response_content:
-                st.markdown(response_content)
                 st.session_state.chat_history.append({"role": "assistant", "text": response_content})
                 st.rerun()
 
