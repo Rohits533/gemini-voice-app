@@ -1,7 +1,7 @@
 import streamlit as st
 import time
-import tempfile
 from google import genai
+from google.genai import types
 from google.genai.errors import ClientError
 
 st.set_page_config(
@@ -75,15 +75,16 @@ div[data-testid="stRadio"] input[type="radio"]:checked + div p {
 </style>
 """, unsafe_allow_html=True)
 
-def safe_generate_audio_response(audio_path):
+def safe_generate_audio_response(audio_bytes, mime_type="audio/wav"):
     client = genai.Client()
     for attempt in range(3):
         try:
-            uploaded = client.files.upload(file=audio_path)
-            prompt = "Listen to this voice message and answer the user's question naturally."
             response = client.models.generate_content(
                 model="gemini-2.5-flash",
-                contents=[prompt, uploaded],
+                contents=[
+                    "Listen to this voice question and answer naturally.",
+                    types.Part.from_bytes(data=audio_bytes, mime_type=mime_type),
+                ],
             )
             return response.text
         except ClientError as e:
@@ -121,7 +122,7 @@ with st.sidebar:
 
 if menu_selection == "🏠 Home Workspace":
     st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">Voice Workspace</h1>', unsafe_allow_html=True)
-    st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">Speak and Gemini will answer from your voice.</p>', unsafe_allow_html=True)
+    st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">Speak into the mic and Gemini will answer directly.</p>', unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
     with col1:
@@ -129,7 +130,7 @@ if menu_selection == "🏠 Home Workspace":
             <div class="hero-card">
                 <span style="color:#ec4899; text-transform:uppercase; font-size:0.75rem; font-weight:700; letter-spacing:1px;">Core Pipeline</span>
                 <h2 style="margin-top:5px; margin-bottom:8px; font-weight:800; color:#fff;">Gemini 2.5 Engine</h2>
-                <p style="color:#9ca3af; font-size:0.95rem; margin-bottom:0;">Voice input to AI response.</p>
+                <p style="color:#9ca3af; font-size:0.95rem; margin-bottom:0;">Audio to AI response.</p>
             </div>
         """, unsafe_allow_html=True)
     with col2:
@@ -150,18 +151,16 @@ if menu_selection == "🏠 Home Workspace":
         with st.chat_message(message["role"], avatar=avatar_icon):
             st.markdown(message["text"])
 
-    if audio:
-        st.audio(audio)
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
-            tmp.write(audio.read())
-            audio_path = tmp.name
+    if audio is not None:
+        audio_bytes = audio.read()
+        st.audio(audio_bytes, format="audio/wav")
 
         with st.chat_message("user", avatar="👤"):
             st.markdown("🎤 Voice question recorded")
 
         with st.chat_message("assistant", avatar="✨"):
             with st.spinner("Gemini is listening..."):
-                response_content = safe_generate_audio_response(audio_path)
+                response_content = safe_generate_audio_response(audio_bytes, mime_type="audio/wav")
 
             if response_content:
                 st.markdown(response_content)
@@ -172,6 +171,7 @@ if menu_selection == "🏠 Home Workspace":
 elif menu_selection == "📖 Engineering Guide":
     st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">Architecture & Guide</h1>', unsafe_allow_html=True)
     st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">A technical overview explaining how this voice workspace was engineered.</p>', unsafe_allow_html=True)
+
     st.markdown("""
         <div class="hero-card">
             <h3 style="color:#fff; font-weight:700; margin-bottom:10px;">🛠️ The Technology Stack</h3>
@@ -181,7 +181,7 @@ elif menu_selection == "📖 Engineering Guide":
             <span class="tech-badge">Streamlit UI Engine</span>
             <span class="tech-badge">Custom CSS3 Injection</span>
             <p style="color:#9ca3af; font-size:0.95rem; line-height:1.6; margin-top:10px;">
-                This application accepts voice input and sends the audio file directly to Gemini for response generation.
+                This application sends the recorded audio bytes to Gemini using inline audio parts.
             </p>
         </div>
     """, unsafe_allow_html=True)
