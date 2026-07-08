@@ -1,6 +1,8 @@
 import streamlit as st
+import time
 from google import genai
 from google.genai import types
+from google.genai.errors import ResourceExhausted
 
 # 1. Page Configuration
 st.set_page_config(
@@ -9,6 +11,10 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded" 
 )
+
+# Initialize Session Memory States Early
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
 # 2. Modern Minimalist Sidebar and Guide Layout CSS
 st.markdown("""
@@ -115,9 +121,39 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Initialize Session Memory States Early
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+# 2.5 API Execution Pipeline with Graceful Error Handling
+def safe_generate_content(prompt_text):
+    """Executes the pipeline while intercepting rate limits with live visual countdowns."""
+    client = genai.Client()
+    max_retries = 3
+    base_delay = 20  # Matches API request delay metrics
+    
+    for attempt in range(max_retries):
+        try:
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=prompt_text,
+            )
+            return response.text
+        except ResourceExhausted:
+            if attempt == max_retries - 1:
+                st.error("🚨 API Engine Quota fully exhausted. Please try again later or upgrade your plan.")
+                return None
+            
+            delay = base_delay * (2 ** attempt)
+            # Create a localized inline warning box with a dynamic countdown clock
+            warning_placeholder = st.empty()
+            for remaining in range(delay, 0, -1):
+                warning_placeholder.warning(
+                    f"⚠️ **Rate Limit Hit (429)**: Free tier requests exceeded. "
+                    f"Retrying connection in **{remaining}s**..."
+                )
+                time.sleep(1)
+            warning_placeholder.empty()
+            
+        except Exception as e:
+            st.error(f"🚨 An unexpected generation error occurred: {str(e)}")
+            return None
 
 # 3. INTERACTIVE SIDEBAR (Home, Guide, About, and History Logs)
 with st.sidebar:
@@ -170,11 +206,29 @@ if menu_selection == "🏠 Home Workspace":
         
     st.markdown('<br><h2 style="font-weight:800; margin-bottom:1.5rem; letter-spacing:-0.5px;">Active Conversation Feed</h2>', unsafe_allow_html=True)
 
-    # 🌟 POLISHED IMAGES: Overriding default avatars to match custom branding
+    # Display Chat Feed Elements
     for message in st.session_state.chat_history:
         avatar_icon = "👤" if message["role"] == "user" else "✨"
         with st.chat_message(message["role"], avatar=avatar_icon):
             st.markdown(message["text"])
+
+    # Chat input execution logic
+    if user_input := st.chat_input("Message Savan Audio Lab..."):
+        # Append and display user text context immediately
+        st.session_state.chat_history.append({"role": "user", "text": user_input})
+        with st.chat_message("user", avatar="👤"):
+            st.markdown(user_input)
+            
+        # Execute Gemini 2.5 Generation Loop cleanly via safety router
+        with st.chat_message("assistant", avatar="✨"):
+            with st.spinner("Processing system context..."):
+                response_content = safe_generate_content(user_input)
+                
+            if response_content:
+                st.markdown(response_content)
+                st.session_state.chat_history.append({"role": "assistant", "text": response_content})
+                # Trigger quick screen state refresh to cleanly append sidebar session logs
+                st.rerun()
 
 elif menu_selection == "📖 Engineering Guide":
     st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">Architecture & Guide</h1>', unsafe_allow_html=True)
@@ -186,109 +240,3 @@ elif menu_selection == "📖 Engineering Guide":
             <span class="tech-badge">Python 3.11</span>
             <span class="tech-badge">Google GenAI SDK</span>
             <span class="tech-badge">Gemini 2.5 Flash</span>
-            <span class="tech-badge">Streamlit UI Engine</span>
-            <span class="tech-badge">Custom CSS3 Injection</span>
-            <p style="color:#9ca3af; font-size:0.95rem; line-height:1.6; margin-top:10px;">
-                This application acts as a low-latency bridge between multimodal foundation models and interactive consumer interfaces. Inspired by systems like Siri and Gemini Live, it records voice waveforms, ships binary data arrays, and decodes textual context in real time.
-            </p>
-        </div>
-        
-        <div class="hero-card">
-            <h3 style="color:#fff; font-weight:700; margin-bottom:12px;">🧠 Core Concepts & Implementations</h3>
-            
-            <h5 style="color:#ec4899; font-weight:600; margin-bottom:4px;">1. Multimodal Injection Arrays</h5>
-            <p style="color:#9ca3af; font-size:0.95rem; line-height:1.5; margin-bottom:15px;">
-                Traditional chat interfaces only process basic strings. This workspace directly captures local hardware microphone frames via <code>st.chat_input(accept_audio=True)</code>, transforms the audio buffered stream into an optimized binary array object, and routes it using the official Google GenAI <code>types.Part.from_bytes</code> structure.
-            </p>
-            
-            <h5 style="color:#ec4899; font-weight:600; margin-bottom:4px;">2. Overriding Legacy Framework Limits with CSS Injection</h5>
-            <p style="color:#9ca3af; font-size:0.95rem; line-height:1.5; margin-bottom:15px;">
-                Streamlit natively limits web elements to a static, light-grey top-down block grid layout. To build a premium dark-mode media environment, raw HTML style overrides were injected to customize native wrapper layers, configure fixed absolute positions, and design a modern Spotify-inspired audio taskbar.
-            </p>
-            
-            <h5 style="color:#ec4899; font-weight:600; margin-bottom:4px;">3. Non-Volatile State Control Flow</h5>
-            <p style="color:#9ca3af; font-size:0.95rem; line-height:1.5; margin-bottom:0px;">
-                Because script updates usually trigger full-page component refresises in Python, the system utilizes <code>st.session_state</code> data-dictionary locks. This preserves conversation lists and updates the sidebar log preview module even during server context changes.
-            </p>
-        </div>
-        
-        <div class="hero-card" style="background: linear-gradient(135deg, #1b122b, #0d0814);">
-            <h3 style="color:#fff; font-weight:700; margin-bottom:5px;">💡 Project Inspiration</h3>
-            <p style="color:#9ca3af; font-size:0.95rem; line-height:1.6;">
-                Originally prototyped during a selective AI assistant webinar hosted by <strong>Vedam AI</strong>, this project was upgraded beyond basic templates to build a beautiful production interface that showcases the future of vocal AI experiences.
-            </p>
-        </div>
-    """, unsafe_allow_html=True)
-
-else:
-    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">About Platform</h1>', unsafe_allow_html=True)
-    st.markdown("""
-        <div class="hero-card" style="margin-top:2rem;">
-            <h3 style="color:#fff; font-weight:700; margin-bottom:5px;">Enterprise Voice Assistant</h3>
-            <p style="color:#6b7280; font-size:0.9rem; font-weight:600; text-transform:uppercase; margin-bottom:15px; letter-spacing:0.5px;">
-                Built by Rohit Savan • 17-Year-Old Developer from Mumbai
-            </p>
-            <p style="color:#9ca3af; line-height:1.6; margin-bottom:20px;">
-                This platform compiles real-time voice and audio input processing routines through Google's Gemini Flash infrastructure. 
-                Designed for high-throughput deployment, it delivers ultra-low turn-taking latencies in a unified minimal environment.
-            </p>
-            <a href="https://rohits533.github.io/" target="_blank" class="portfolio-btn">🌐 View My Portfolio</a>
-        </div>
-    """, unsafe_allow_html=True)
-
-# 5. SECURE CREDENTIALS SETUP
-api_key = st.secrets.get("GEMINI_API_KEY")
-if not api_key:
-    st.error("🔑 API Key Missing. Please set your GEMINI_API_KEY value inside Streamlit Cloud Secrets.")
-    st.stop()
-    
-client = genai.Client(api_key=api_key)
-
-# 6. FIXED AUDIO CONTROLLER TASKBAR (Only renders on Home layout screen)
-if menu_selection == "🏠 Home Workspace":
-    st.markdown('<div class="fixed-player-bar">', unsafe_allow_html=True)
-    f_col1, f_col2 = st.columns([1, 2])
-
-    with f_col1:
-        st.markdown("""
-            <div style="display:flex; align-items:center; gap:14px; margin-top:8px; margin-left:15px;">
-                <div style="background: linear-gradient(135deg, #ec4899, #8b5cf6); width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; box-shadow: 0 4px 12px rgba(236,72,153,0.3);">AI</div>
-                <div>
-                    <p style="margin:0; font-weight:600; font-size:0.95rem; color:#fff;">Assistant Status</p>
-                    <p style="margin:0; color:#10b981; font-size:0.75rem; font-weight:600;">● Ready to Record</p>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-
-    with f_col2:
-        prompt = st.chat_input("Speak or Type your query...", accept_audio=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # 7. LOGIC PIPELINE HOOK
-    if prompt:
-        user_text = prompt.text if hasattr(prompt, 'text') else prompt.get("text", "")
-        uploaded_audio = prompt.audio if hasattr(prompt, 'audio') else prompt.get("audio")
-        
-        contents_payload = []
-        if uploaded_audio:
-            audio_data_bytes = uploaded_audio.read()
-            contents_payload.append(types.Part.from_bytes(data=audio_data_bytes, mime_type="audio/wav"))
-            if not user_text:
-                user_text = "🎙️ Audio Search Request"
-                
-        if user_text and user_text != "🎙️ Audio Search Request":
-            contents_payload.append(user_text)
-
-        if contents_payload:
-            st.session_state.chat_history.append({"role": "user", "text": user_text})
-            
-            try:
-                contents_payload.append("Keep your answer clear, direct, and under 2 sentences.")
-                response = client.models.generate_content(model='gemini-2.5-flash', contents=contents_payload)
-                ai_text_summary = response.text
-                
-                st.session_state.chat_history.append({"role": "assistant", "text": ai_text_summary})
-                st.rerun()
-            except Exception as e:
-                st.error(f"Error handling engine context: {e}")
