@@ -1,5 +1,9 @@
 import streamlit as st
 import time
+import os
+import tempfile
+import wave
+import io
 from google import genai
 from google.genai.errors import ClientError
 
@@ -13,76 +17,88 @@ st.set_page_config(
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
+if "audio_mode" not in st.session_state:
+    st.session_state.audio_mode = True
+
 st.markdown("""
-    <style>
-    [data-testid="stHeader"], footer { visibility: hidden; display: none; }
+<style>
+[data-testid="stHeader"], footer { visibility: hidden; display: none; }
 
-    .stApp {
-        background: radial-gradient(circle at top right, #1f1b2e, #0f0c15 60%);
-        color: #f3f4f6;
-        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    }
+.stApp {
+    background: radial-gradient(circle at top right, #1f1b2e, #0f0c15 60%);
+    color: #f3f4f6;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
 
-    [data-testid="stSidebar"] {
-        background-color: #12101a !important;
-        border-right: 1px solid rgba(255,255,255,0.03) !important;
-        width: 280px !important;
-    }
+[data-testid="stSidebar"] {
+    background-color: #12101a !important;
+    border-right: 1px solid rgba(255,255,255,0.03) !important;
+    width: 280px !important;
+}
 
-    div[data-testid="stRadio"] > label {
-        display: none;
-    }
+div[data-testid="stRadio"] > label {
+    display: none;
+}
 
-    div[data-testid="stRadio"] [data-testid="stMarkdownContainer"] p {
-        font-size: 1rem !important;
-        color: #9ca3af !important;
-        font-weight: 500 !important;
-        padding: 6px 0px;
-    }
+div[data-testid="stRadio"] [data-testid="stMarkdownContainer"] p {
+    font-size: 1rem !important;
+    color: #9ca3af !important;
+    font-weight: 500 !important;
+    padding: 6px 0px;
+}
 
-    div[data-testid="stRadio"] input[type="radio"]:checked + div p {
-        color: #ec4899 !important;
-        font-weight: 600 !important;
-    }
+div[data-testid="stRadio"] input[type="radio"]:checked + div p {
+    color: #ec4899 !important;
+    font-weight: 600 !important;
+}
 
-    .hero-card {
-        background: linear-gradient(135deg, #1d182b, #110e1a);
-        border: 1px solid rgba(255,255,255,0.04);
-        border-radius: 16px;
-        padding: 1.75rem;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        margin-bottom: 1.25rem;
-    }
+.hero-card {
+    background: linear-gradient(135deg, #1d182b, #110e1a);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 16px;
+    padding: 1.75rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    margin-bottom: 1.25rem;
+}
 
-    .tech-badge {
-        background: rgba(236, 72, 153, 0.1);
-        color: #ec4899;
-        border: 1px solid rgba(236, 72, 153, 0.2);
-        padding: 4px 10px;
-        border-radius: 6px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        display: inline-block;
-        margin-right: 6px;
-        margin-bottom: 6px;
-    }
+.tech-badge {
+    background: rgba(236, 72, 153, 0.1);
+    color: #ec4899;
+    border: 1px solid rgba(236, 72, 153, 0.2);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-block;
+    margin-right: 6px;
+    margin-bottom: 6px;
+}
 
-    .sidebar-history-box {
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.04);
-        border-radius: 10px;
-        padding: 10px;
-        margin-bottom: 8px;
-        font-size: 0.85rem;
-        color: #d1d5db;
-    }
-    </style>
+.sidebar-history-box {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+    color: #d1d5db;
+}
+
+[data-testid="stChatInput"] {
+    background-color: #1a1626 !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    border-radius: 30px !important;
+}
+</style>
 """, unsafe_allow_html=True)
 
+def get_client():
+    return genai.Client()
+
 def safe_generate_content(prompt_text):
-    client = genai.Client()
+    client = get_client()
     max_retries = 3
-    base_delay = 20
+    base_delay = 5
 
     for attempt in range(max_retries):
         try:
@@ -93,29 +109,31 @@ def safe_generate_content(prompt_text):
             return response.text
 
         except ClientError as e:
-            status_code = getattr(e, "status_code", None)
-            message = str(e)
-
-            if status_code == 429 or "RESOURCE_EXHAUSTED" in message or "quota" in message.lower():
+            msg = str(e)
+            if "429" in msg or "RESOURCE_EXHAUSTED" in msg or "quota" in msg.lower():
                 if attempt == max_retries - 1:
-                    st.error("🚨 API quota/rate limit reached. Please try again later.")
+                    st.error("API quota/rate limit reached. Please try again later.")
                     return None
 
                 delay = base_delay * (2 ** attempt)
-                warning_placeholder = st.empty()
+                placeholder = st.empty()
                 for remaining in range(delay, 0, -1):
-                    warning_placeholder.warning(
-                        f"⚠️ Rate limit hit. Retrying in {remaining}s..."
-                    )
+                    placeholder.warning(f"Rate limit hit. Retrying in {remaining}s...")
                     time.sleep(1)
-                warning_placeholder.empty()
+                placeholder.empty()
             else:
-                st.error(f"🚨 API error: {message}")
+                st.error(f"API error: {msg}")
                 return None
 
         except Exception as e:
-            st.error(f"🚨 Unexpected generation error: {str(e)}")
+            st.error(f"Unexpected error: {str(e)}")
             return None
+
+def speech_to_text_placeholder(audio_file):
+    return None
+
+def audio_bytes_to_wav_bytes(audio_file):
+    return audio_file.read()
 
 with st.sidebar:
     st.markdown(
@@ -128,45 +146,26 @@ with st.sidebar:
         ["🏠 Home Workspace", "📖 Engineering Guide", "ℹ️ About Application"],
     )
 
-    st.markdown(
-        '<br><hr style="border-color: rgba(255,255,255,0.05);"><br>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        '<p style="font-size:0.75rem; color:#6b7280; text-transform:uppercase; font-weight:700; letter-spacing:1px; margin-bottom:12px;">📜 Chat History Logs</p>',
-        unsafe_allow_html=True,
-    )
+    st.markdown('<br><hr style="border-color: rgba(255,255,255,0.05);"><br>', unsafe_allow_html=True)
+    st.markdown('<p style="font-size:0.75rem; color:#6b7280; text-transform:uppercase; font-weight:700; letter-spacing:1px; margin-bottom:12px;">📜 Chat History Logs</p>', unsafe_allow_html=True)
 
     if not st.session_state.chat_history:
-        st.markdown(
-            '<p style="font-size:0.85rem; color:#4b5563; font-style:italic;">No recent sessions found.</p>',
-            unsafe_allow_html=True,
-        )
+        st.markdown('<p style="font-size:0.85rem; color:#4b5563; font-style:italic;">No recent sessions found.</p>', unsafe_allow_html=True)
     else:
         for msg in st.session_state.chat_history:
             role_label = "👤 You" if msg["role"] == "user" else "✨ Assistant"
             short_text = msg["text"][:35] + "..." if len(msg["text"]) > 35 else msg["text"]
-            st.markdown(
-                f"""
+            st.markdown(f"""
                 <div class="sidebar-history-box">
                     <strong>{role_label}:</strong> {short_text}
                 </div>
-                """,
-                unsafe_allow_html=True,
-            )
+            """, unsafe_allow_html=True)
 
 if menu_selection == "🏠 Home Workspace":
-    st.markdown(
-        '<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">Voice Workspace</h1>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        '<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">Speak or type below to interact with the audio asset platform.</p>',
-        unsafe_allow_html=True,
-    )
+    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">Voice Workspace</h1>', unsafe_allow_html=True)
+    st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">Use your voice or type below to interact with the audio asset platform.</p>', unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
-
     with col1:
         st.markdown("""
             <div class="hero-card">
@@ -185,25 +184,34 @@ if menu_selection == "🏠 Home Workspace":
             </div>
         """, unsafe_allow_html=True)
 
-    st.markdown(
-        '<br><h2 style="font-weight:800; margin-bottom:1.5rem; letter-spacing:-0.5px;">Active Conversation Feed</h2>',
-        unsafe_allow_html=True,
-    )
+    st.markdown('<br><h2 style="font-weight:800; margin-bottom:1rem; letter-spacing:-0.5px;">Voice Input</h2>', unsafe_allow_html=True)
+
+    audio_file = st.audio_input("Record a voice message", sample_rate=16000)
+    typed_fallback = st.chat_input("Or type a message...")
+
+    user_text = None
+
+    if audio_file is not None:
+        st.audio(audio_file)
+        st.info("Audio recorded. Add speech-to-text if you want automatic transcription.")
+        user_text = typed_fallback
+
+    if typed_fallback and not audio_file:
+        user_text = typed_fallback
 
     for message in st.session_state.chat_history:
         avatar_icon = "👤" if message["role"] == "user" else "✨"
         with st.chat_message(message["role"], avatar=avatar_icon):
             st.markdown(message["text"])
 
-    if user_input := st.chat_input("Message Savan Audio Lab..."):
-        st.session_state.chat_history.append({"role": "user", "text": user_input})
-
+    if user_text:
+        st.session_state.chat_history.append({"role": "user", "text": user_text})
         with st.chat_message("user", avatar="👤"):
-            st.markdown(user_input)
+            st.markdown(user_text)
 
         with st.chat_message("assistant", avatar="✨"):
             with st.spinner("Processing system context..."):
-                response_content = safe_generate_content(user_input)
+                response_content = safe_generate_content(user_text)
 
             if response_content:
                 st.markdown(response_content)
@@ -211,14 +219,8 @@ if menu_selection == "🏠 Home Workspace":
                 st.rerun()
 
 elif menu_selection == "📖 Engineering Guide":
-    st.markdown(
-        '<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">Architecture & Guide</h1>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        '<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">A technical overview explaining how this advanced multimodal voice workspace was engineered.</p>',
-        unsafe_allow_html=True,
-    )
+    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">Architecture & Guide</h1>', unsafe_allow_html=True)
+    st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">A technical overview explaining how this voice workspace was engineered.</p>', unsafe_allow_html=True)
 
     st.markdown("""
         <div class="hero-card">
@@ -230,17 +232,11 @@ elif menu_selection == "📖 Engineering Guide":
             <span class="tech-badge">Custom CSS3 Injection</span>
             <p style="color:#9ca3af; font-size:0.95rem; line-height:1.6; margin-top:10px;">
                 This application acts as a low-latency bridge between multimodal foundation models and interactive consumer interfaces.
-                It is designed to send prompts to Gemini and display responses in real time.
+                It is designed to accept voice or text and display responses in real time.
             </p>
         </div>
     """, unsafe_allow_html=True)
 
 elif menu_selection == "ℹ️ About Application":
-    st.markdown(
-        '<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">About Savan Audio Lab</h1>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        '<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">Interactive voice asset workspace interface.</p>',
-        unsafe_allow_html=True,
-    )
+    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">About Savan Audio Lab</h1>', unsafe_allow_html=True)
+    st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">Interactive voice asset workspace interface.</p>', unsafe_allow_html=True)
