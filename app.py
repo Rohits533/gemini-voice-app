@@ -123,7 +123,6 @@ if "chat_history" not in st.session_state:
 with st.sidebar:
     st.markdown('<h2 style="color:#fff; font-weight:800; margin-bottom:2rem; letter-spacing:-1px;">✨ Savan Audio Lab</h2>', unsafe_allow_html=True)
     
-    # Updated Menu Selection Router
     menu_selection = st.radio(
         "Navigation Links",
         ["🏠 Home Workspace", "📖 Engineering Guide", "ℹ️ About Application"]
@@ -171,12 +170,13 @@ if menu_selection == "🏠 Home Workspace":
         
     st.markdown('<br><h2 style="font-weight:800; margin-bottom:1.5rem; letter-spacing:-0.5px;">Active Conversation Feed</h2>', unsafe_allow_html=True)
 
+    # 🌟 POLISHED IMAGES: Overriding default avatars to match custom branding
     for message in st.session_state.chat_history:
-        with st.chat_message(message["role"]):
+        avatar_icon = "👤" if message["role"] == "user" else "✨"
+        with st.chat_message(message["role"], avatar=avatar_icon):
             st.markdown(message["text"])
 
 elif menu_selection == "📖 Engineering Guide":
-    # 🌟 NEW ENGINEERING GUIDE SECTION 🌟
     st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">Architecture & Guide</h1>', unsafe_allow_html=True)
     st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">A technical overview explaining how this advanced multimodal voice workspace was engineered.</p>', unsafe_allow_html=True)
     
@@ -208,7 +208,7 @@ elif menu_selection == "📖 Engineering Guide":
             
             <h5 style="color:#ec4899; font-weight:600; margin-bottom:4px;">3. Non-Volatile State Control Flow</h5>
             <p style="color:#9ca3af; font-size:0.95rem; line-height:1.5; margin-bottom:0px;">
-                Because script updates usually trigger full-page component refreshes in Python, the system utilizes <code>st.session_state</code> data-dictionary locks. This preserves conversation lists and updates the sidebar log preview module even during server context changes.
+                Because script updates usually trigger full-page component refresises in Python, the system utilizes <code>st.session_state</code> data-dictionary locks. This preserves conversation lists and updates the sidebar log preview module even during server context changes.
             </p>
         </div>
         
