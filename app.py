@@ -15,9 +15,9 @@ st.set_page_config(
 st.markdown("""
     <style>
     .block-container { max-width: 700px; padding-top: 2rem; }
-    h1 { font-weight: 800; tracking-spacing: -1px; }
+    h1 { font-weight: 800; letter-spacing: -1px; }
     </style>
-""", unsafe_allowed_value=True)
+""", unsafe_allow_html=True)
 
 st.title("✨ Gemini Search Assistant")
 st.caption("A premium native voice & text search companion powered by Gemini 2.5 Flash")
@@ -48,8 +48,8 @@ for message in st.session_state.chat_history:
 prompt = st.chat_input("Ask or speak to Gemini...", accept_audio=True)
 
 if prompt:
-    user_text = prompt.get("text", "").strip()
-    uploaded_audio = prompt.get("audio") # Dict-like object holding user speech WAV file bytes
+    user_text = prompt.text if hasattr(prompt, 'text') else prompt.get("text", "")
+    uploaded_audio = prompt.audio if hasattr(prompt, 'audio') else prompt.get("audio")
     
     # Structure payload targets
     contents_payload = []
@@ -60,7 +60,6 @@ if prompt:
         contents_payload.append(
             types.Part.from_bytes(data=audio_data_bytes, mime_type="audio/wav")
         )
-        # Fallback text tag for logs if transcription isn't finished yet
         if not user_text:
             user_text = "🎙️ Spoken Search Query"
             
