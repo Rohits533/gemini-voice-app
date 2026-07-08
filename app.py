@@ -40,18 +40,16 @@ if "chat_history" not in st.session_state:
 for message in st.session_state.chat_history:
     with st.chat_message(message["role"]):
         st.markdown(message["text"])
-        if "audio_bytes" in message:
+        if "audio_bytes" in message and message["audio_bytes"]:
             st.audio(message["audio_bytes"], format="audio/mp3")
 
 # 4. Streamlit Unified Bottom Interactive Input 
-# This activates BOTH standard typing and the real-time microphone capture in one bottom bar
 prompt = st.chat_input("Ask or speak to Gemini...", accept_audio=True)
 
 if prompt:
     user_text = prompt.text if hasattr(prompt, 'text') else prompt.get("text", "")
     uploaded_audio = prompt.audio if hasattr(prompt, 'audio') else prompt.get("audio")
     
-    # Structure payload targets
     contents_payload = []
     
     # Process Voice Input if user spoke
@@ -75,48 +73,53 @@ if prompt:
 
         # Generate Agent AI Response
         with st.chat_message("assistant"):
-            with st.spinner("Analyzing audio context & searching..."):
+            with st.spinner("Analyzing context & generating response..."):
                 try:
-                    # Instruct Gemini to act as a sleek voice companion
+                    # Clear instruction persona
                     contents_payload.append(
                         "You are an elegant, elite AI voice companion just like Siri or Gemini Live. "
                         "Process the input query and provide a sophisticated response. Keep it concise "
-                        "(under 3 sentences). You MUST return your response as actual spoken audio."
+                        "(under 3 sentences)."
                     )
                     
+                    # Call standard generation (text-based return)
                     response = client.models.generate_content(
                         model='gemini-2.5-flash',
-                        contents=contents_payload,
-                        config=types.GenerateContentConfig(
-                            response_modalities=["AUDIO"] # Force native voice delivery
-                        )
+                        contents=contents_payload
                     )
 
-                    # Extract the audio chunk out of the multimodal response object
-                    audio_parts = [
-                        part for part in response.candidates[0].content.parts 
-                        if part.inline_data and part.inline_data.mime_type.startswith("audio/")
-                    ]
-
-                    if audio_parts:
-                        raw_ai_voice = audio_parts[0].inline_data.data
+                    ai_text_summary = response.text
+                    st.markdown(ai_text_summary)
+                    
+                    # Generate text-to-speech output using Gemini's TTS model variant
+                    try:
+                        tts_response = client.models.generate_content(
+                            model='gemini-2.5-flash-tts',
+                            contents=f"Say naturally: {ai_text_summary}"
+                        )
                         
-                        # Display text transcript or helper note
-                        ai_text_summary = response.text if response.text else "🔊 Voice Broadcast Response"
-                        st.markdown(ai_text_summary)
+                        # Extract the audio bits
+                        audio_parts = [
+                            part for part in tts_response.candidates[0].content.parts 
+                            if part.inline_data and part.inline_data.mime_type.startswith("audio/")
+                        ]
                         
-                        # Render audio playback track and force auto-play out loud
-                        st.audio(raw_ai_voice, format="audio/mp3", autoplay=True)
-                        
-                        # Record permanently into session memory
-                        st.session_state.chat_history.append({
-                            "role": "assistant", 
-                            "text": ai_text_summary, 
-                            "audio_bytes": raw_ai_voice
-                        })
-                    else:
-                        st.markdown(response.text)
-                        st.session_state.chat_history.append({"role": "assistant", "text": response.text})
+                        if audio_parts:
+                            raw_ai_voice = audio_parts[0].inline_data.data
+                            st.audio(raw_ai_voice, format="audio/mp3", autoplay=True)
+                            
+                            # Record to chat history with audio
+                            st.session_state.chat_history.append({
+                                "role": "assistant", 
+                                "text": ai_text_summary, 
+                                "audio_bytes": raw_ai_voice
+                            })
+                        else:
+                            st.session_state.chat_history.append({"role": "assistant", "text": ai_text_summary})
+                            
+                    except Exception as tts_error:
+                        # Fallback smoothly if TTS model is not available on your API tier region
+                        st.session_state.chat_history.append({"role": "assistant", "text": ai_text_summary})
 
                 except Exception as e:
                     st.error(f"Execution Error: {e}")
