@@ -307,4 +307,14 @@ elif menu_selection == "ℹ️ About Application":
         </div>
     """, unsafe_allow_html=True)
 
-    st.link_button("Visit My Portfolio", "https://rohits533.github.io")
+    st.markdown("""
+        <div class="hero-card" style="background: linear-gradient(135deg, #23162d, #120d18);">
+            <h3 style="color:#fff; font-weight:700; margin-bottom:10px;">What This App Does</h3>
+            <p style="color:#cbd5e1; font-size:0.95rem; line-height:1.7; margin-bottom:0;">
+                It combines voice input, text chat, session history, and a polished sidebar layout.
+                You can ask a question by typing or speaking, and Gemini will respond in the same interface.
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    st.link_button("Portfolio", "https://rohits533.github.io")
