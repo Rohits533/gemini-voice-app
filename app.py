@@ -10,7 +10,7 @@ st.set_page_config(
     initial_sidebar_state="expanded" 
 )
 
-# 2. Modern Minimalist Sidebar CSS
+# 2. Modern Minimalist Sidebar and Guide Layout CSS
 st.markdown("""
     <style>
     [data-testid="stHeader"], footer { visibility: hidden; display: none; }
@@ -27,7 +27,7 @@ st.markdown("""
         width: 280px !important;
     }
     
-    /* Make the navigation choices look professional and clean */
+    /* Navigation Link Styles */
     div[data-testid="stRadio"] > label {
         display: none; 
     }
@@ -49,7 +49,21 @@ st.markdown("""
         border-radius: 16px;
         padding: 1.75rem;
         box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        margin-bottom: 1rem;
+        margin-bottom: 1.25rem;
+    }
+    
+    /* Mini-badge highlight components */
+    .tech-badge {
+        background: rgba(236, 72, 153, 0.1);
+        color: #ec4899;
+        border: 1px solid rgba(236, 72, 153, 0.2);
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-block;
+        margin-right: 6px;
+        margin-bottom: 6px;
     }
     
     /* Portfolio Button Link Styling */
@@ -105,14 +119,14 @@ st.markdown("""
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# 3. INTERACTIVE SIDEBAR (Home, About, and History Logs)
+# 3. INTERACTIVE SIDEBAR (Home, Guide, About, and History Logs)
 with st.sidebar:
-    # 📝 YOUR NEW LINKED BRAND NAME:
     st.markdown('<h2 style="color:#fff; font-weight:800; margin-bottom:2rem; letter-spacing:-1px;">✨ Savan Audio Lab</h2>', unsafe_allow_html=True)
     
+    # Updated Menu Selection Router
     menu_selection = st.radio(
         "Navigation Links",
-        ["🏠 Home", "ℹ️ About Application"]
+        ["🏠 Home Workspace", "📖 Engineering Guide", "ℹ️ About Application"]
     )
     
     st.markdown('<br><hr style="border-color: rgba(255,255,255,0.05);"><br>', unsafe_allow_html=True)
@@ -131,7 +145,7 @@ with st.sidebar:
             """, unsafe_allow_html=True)
 
 # 4. MAIN WINDOW WORKSPACE ROUTER
-if menu_selection == "🏠 Home":
+if menu_selection == "🏠 Home Workspace":
     st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">Voice Workspace</h1>', unsafe_allow_html=True)
     st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">Speak or type below to interact with the audio asset platform.</p>', unsafe_allow_html=True)
 
@@ -157,10 +171,54 @@ if menu_selection == "🏠 Home":
         
     st.markdown('<br><h2 style="font-weight:800; margin-bottom:1.5rem; letter-spacing:-0.5px;">Active Conversation Feed</h2>', unsafe_allow_html=True)
 
-    # Output active full dialogue chat streams right in center display space
     for message in st.session_state.chat_history:
         with st.chat_message(message["role"]):
             st.markdown(message["text"])
+
+elif menu_selection == "📖 Engineering Guide":
+    # 🌟 NEW ENGINEERING GUIDE SECTION 🌟
+    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">Architecture & Guide</h1>', unsafe_allow_html=True)
+    st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">A technical overview explaining how this advanced multimodal voice workspace was engineered.</p>', unsafe_allow_html=True)
+    
+    st.markdown("""
+        <div class="hero-card">
+            <h3 style="color:#fff; font-weight:700; margin-bottom:10px;">🛠️ The Technology Stack</h3>
+            <span class="tech-badge">Python 3.11</span>
+            <span class="tech-badge">Google GenAI SDK</span>
+            <span class="tech-badge">Gemini 2.5 Flash</span>
+            <span class="tech-badge">Streamlit UI Engine</span>
+            <span class="tech-badge">Custom CSS3 Injection</span>
+            <p style="color:#9ca3af; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                This application acts as a low-latency bridge between multimodal foundation models and interactive consumer interfaces. Inspired by systems like Siri and Gemini Live, it records voice waveforms, ships binary data arrays, and decodes textual context in real time.
+            </p>
+        </div>
+        
+        <div class="hero-card">
+            <h3 style="color:#fff; font-weight:700; margin-bottom:12px;">🧠 Core Concepts & Implementations</h3>
+            
+            <h5 style="color:#ec4899; font-weight:600; margin-bottom:4px;">1. Multimodal Injection Arrays</h5>
+            <p style="color:#9ca3af; font-size:0.95rem; line-height:1.5; margin-bottom:15px;">
+                Traditional chat interfaces only process basic strings. This workspace directly captures local hardware microphone frames via <code>st.chat_input(accept_audio=True)</code>, transforms the audio buffered stream into an optimized binary array object, and routes it using the official Google GenAI <code>types.Part.from_bytes</code> structure.
+            </p>
+            
+            <h5 style="color:#ec4899; font-weight:600; margin-bottom:4px;">2. Overriding Legacy Framework Limits with CSS Injection</h5>
+            <p style="color:#9ca3af; font-size:0.95rem; line-height:1.5; margin-bottom:15px;">
+                Streamlit natively limits web elements to a static, light-grey top-down block grid layout. To build a premium dark-mode media environment, raw HTML style overrides were injected to customize native wrapper layers, configure fixed absolute positions, and design a modern Spotify-inspired audio taskbar.
+            </p>
+            
+            <h5 style="color:#ec4899; font-weight:600; margin-bottom:4px;">3. Non-Volatile State Control Flow</h5>
+            <p style="color:#9ca3af; font-size:0.95rem; line-height:1.5; margin-bottom:0px;">
+                Because script updates usually trigger full-page component refreshes in Python, the system utilizes <code>st.session_state</code> data-dictionary locks. This preserves conversation lists and updates the sidebar log preview module even during server context changes.
+            </p>
+        </div>
+        
+        <div class="hero-card" style="background: linear-gradient(135deg, #1b122b, #0d0814);">
+            <h3 style="color:#fff; font-weight:700; margin-bottom:5px;">💡 Project Inspiration</h3>
+            <p style="color:#9ca3af; font-size:0.95rem; line-height:1.6;">
+                Originally prototyped during a selective AI assistant webinar hosted by <strong>Vedam AI</strong>, this project was upgraded beyond basic templates to build a beautiful production interface that showcases the future of vocal AI experiences.
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
 
 else:
     st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">About Platform</h1>', unsafe_allow_html=True)
@@ -187,7 +245,7 @@ if not api_key:
 client = genai.Client(api_key=api_key)
 
 # 6. FIXED AUDIO CONTROLLER TASKBAR (Only renders on Home layout screen)
-if menu_selection == "🏠 Home":
+if menu_selection == "🏠 Home Workspace":
     st.markdown('<div class="fixed-player-bar">', unsafe_allow_html=True)
     f_col1, f_col2 = st.columns([1, 2])
 
