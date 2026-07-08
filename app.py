@@ -75,18 +75,46 @@ div[data-testid="stRadio"] input[type="radio"]:checked + div p {
 </style>
 """, unsafe_allow_html=True)
 
-def safe_generate_audio_response(audio_bytes, mime_type="audio/wav"):
+def safe_generate_text(prompt_text):
     client = genai.Client()
     for attempt in range(3):
         try:
-            response = client.models.generate_content(
+            resp = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt_text,
+            )
+            return resp.text
+        except ClientError as e:
+            msg = str(e)
+            if "429" in msg or "RESOURCE_EXHAUSTED" in msg or "quota" in msg.lower():
+                if attempt == 2:
+                    st.error("API quota/rate limit reached.")
+                    return None
+                delay = 5 * (2 ** attempt)
+                ph = st.empty()
+                for r in range(delay, 0, -1):
+                    ph.warning(f"Rate limit hit. Retrying in {r}s...")
+                    time.sleep(1)
+                ph.empty()
+            else:
+                st.error(f"API error: {msg}")
+                return None
+        except Exception as e:
+            st.error(f"Unexpected error: {str(e)}")
+            return None
+
+def safe_generate_audio(audio_bytes):
+    client = genai.Client()
+    for attempt in range(3):
+        try:
+            resp = client.models.generate_content(
                 model="gemini-2.5-flash",
                 contents=[
                     "Listen to this voice question and answer naturally.",
-                    types.Part.from_bytes(data=audio_bytes, mime_type=mime_type),
+                    types.Part.from_bytes(data=audio_bytes, mime_type="audio/wav"),
                 ],
             )
-            return response.text
+            return resp.text
         except ClientError as e:
             msg = str(e)
             if "429" in msg or "RESOURCE_EXHAUSTED" in msg or "quota" in msg.lower():
@@ -122,7 +150,7 @@ with st.sidebar:
 
 if menu_selection == "🏠 Home Workspace":
     st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">Voice Workspace</h1>', unsafe_allow_html=True)
-    st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">Speak into the mic and Gemini will answer directly.</p>', unsafe_allow_html=True)
+    st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">Use your voice or type below to interact with the audio asset platform.</p>', unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
     with col1:
@@ -130,7 +158,7 @@ if menu_selection == "🏠 Home Workspace":
             <div class="hero-card">
                 <span style="color:#ec4899; text-transform:uppercase; font-size:0.75rem; font-weight:700; letter-spacing:1px;">Core Pipeline</span>
                 <h2 style="margin-top:5px; margin-bottom:8px; font-weight:800; color:#fff;">Gemini 2.5 Engine</h2>
-                <p style="color:#9ca3af; font-size:0.95rem; margin-bottom:0;">Audio to AI response.</p>
+                <p style="color:#9ca3af; font-size:0.95rem; margin-bottom:0;">Multimodal context analytics system optimized and ready.</p>
             </div>
         """, unsafe_allow_html=True)
     with col2:
@@ -142,25 +170,34 @@ if menu_selection == "🏠 Home Workspace":
             </div>
         """, unsafe_allow_html=True)
 
-    st.markdown('<br><h2 style="font-weight:800; margin-bottom:1rem; letter-spacing:-0.5px;">Voice Input</h2>', unsafe_allow_html=True)
+    st.markdown('<br><h2 style="font-weight:800; margin-bottom:1rem; letter-spacing:-0.5px;">Voice + Chat Input</h2>', unsafe_allow_html=True)
 
-    audio = st.audio_input("Record your voice question", sample_rate=16000)
+    voice_audio = st.audio_input("Record a voice message", sample_rate=16000)
+    text_input = st.chat_input("Message Savan Audio Lab...")
 
     for message in st.session_state.chat_history:
         avatar_icon = "👤" if message["role"] == "user" else "✨"
         with st.chat_message(message["role"], avatar=avatar_icon):
             st.markdown(message["text"])
 
-    if audio is not None:
-        audio_bytes = audio.read()
-        st.audio(audio_bytes, format="audio/wav")
+    user_text = None
+    user_mode = None
+
+    if text_input:
+        user_text = text_input
+        user_mode = "text"
+
+    if voice_audio is not None:
+        voice_bytes = voice_audio.read()
+        st.audio(voice_bytes, format="audio/wav")
+        user_mode = "voice"
 
         with st.chat_message("user", avatar="👤"):
             st.markdown("🎤 Voice question recorded")
 
         with st.chat_message("assistant", avatar="✨"):
             with st.spinner("Gemini is listening..."):
-                response_content = safe_generate_audio_response(audio_bytes, mime_type="audio/wav")
+                response_content = safe_generate_audio(voice_bytes)
 
             if response_content:
                 st.markdown(response_content)
@@ -168,10 +205,23 @@ if menu_selection == "🏠 Home Workspace":
                 st.session_state.chat_history.append({"role": "assistant", "text": response_content})
                 st.rerun()
 
+    if user_text and user_mode == "text":
+        st.session_state.chat_history.append({"role": "user", "text": user_text})
+        with st.chat_message("user", avatar="👤"):
+            st.markdown(user_text)
+
+        with st.chat_message("assistant", avatar="✨"):
+            with st.spinner("Processing system context..."):
+                response_content = safe_generate_text(user_text)
+
+            if response_content:
+                st.markdown(response_content)
+                st.session_state.chat_history.append({"role": "assistant", "text": response_content})
+                st.rerun()
+
 elif menu_selection == "📖 Engineering Guide":
     st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">Architecture & Guide</h1>', unsafe_allow_html=True)
-    st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">A technical overview explaining how this voice workspace was engineered.</p>', unsafe_allow_html=True)
-
+    st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">A technical overview explaining how this advanced multimodal voice workspace was engineered.</p>', unsafe_allow_html=True)
     st.markdown("""
         <div class="hero-card">
             <h3 style="color:#fff; font-weight:700; margin-bottom:10px;">🛠️ The Technology Stack</h3>
@@ -181,7 +231,7 @@ elif menu_selection == "📖 Engineering Guide":
             <span class="tech-badge">Streamlit UI Engine</span>
             <span class="tech-badge">Custom CSS3 Injection</span>
             <p style="color:#9ca3af; font-size:0.95rem; line-height:1.6; margin-top:10px;">
-                This application sends the recorded audio bytes to Gemini using inline audio parts.
+                This app keeps both text chat and voice input, and routes each to Gemini.
             </p>
         </div>
     """, unsafe_allow_html=True)
