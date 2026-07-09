@@ -15,7 +15,7 @@ st.set_page_config(
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# Initialize state to track processed audio files and prevent API request loops
+# State variables to prevent multi-triggering
 if "last_processed_audio" not in st.session_state:
     st.session_state.last_processed_audio = None
 
@@ -83,15 +83,7 @@ div[data-testid="stRadio"] input[type="radio"]:checked + div p {
     color: #d1d5db;
 }
 
-[data-testid="stChatInput"] {
-    background-color: #1a1626 !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
-    border-radius: 30px !important;
-}
-
-/* ==========================================
-   FIX FOR CHAT BUBBLE VISIBILITY 
-   ========================================== */
+/* Style for Streamlit native chat bubbles */
 div[data-testid="stChatMessage"] {
     background-color: rgba(255, 255, 255, 0.06) !important; 
     border: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -105,9 +97,7 @@ div[data-testid="stChatMessage"] p {
     font-size: 0.95rem !important;
 }
 
-/* ==========================================
-   MODERN GRADIENT PORTFOLIO BUTTON STYLE 
-   ========================================== */
+/* Modern Portfolio Link Button Styling */
 .modern-portfolio-btn {
     display: inline-flex;
     align-items: center;
@@ -132,8 +122,11 @@ div[data-testid="stChatMessage"] p {
     color: #ffffff !important;
 }
 
-.modern-portfolio-btn:active {
-    transform: translateY(0);
+/* Remove default form border box styles */
+div[data-testid="stForm"] {
+    border: none !important;
+    padding: 0 !important;
+    background-color: transparent !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -141,7 +134,7 @@ div[data-testid="stChatMessage"] p {
 def safe_generate_text(prompt_text):
     client = genai.Client()
     max_attempts = 3
-    base_delay = 5.0  # Increased backoff delay for stable free tier cooling
+    base_delay = 4.0
     
     for attempt in range(max_attempts):
         try:
@@ -149,20 +142,18 @@ def safe_generate_text(prompt_text):
                 model="gemini-2.5-flash",
                 contents=prompt_text,
             )
-            # Add a small 1-second client throttle to buffer requests
-            time.sleep(1)
             return resp.text
         except ClientError as e:
             msg = str(e)
             if "429" in msg or "RESOURCE_EXHAUSTED" in msg or "quota" in msg.lower():
                 if attempt == max_attempts - 1:
-                    st.error("API quota limit completely exhausted after multiple retries.")
+                    st.error("Free-tier quota limit exhausted. Please wait 1 minute before sending another message.")
                     return None
                 
                 calculated_delay = (base_delay * (2 ** attempt)) + random.random()
                 ph = st.empty()
                 for r in range(int(calculated_delay), 0, -1):
-                    ph.warning(f"🔄 Rate limit hit (429). Backing off... Retrying in {r}s (Attempt {attempt + 1}/{max_attempts-1})")
+                    ph.warning(f"🔄 Rate limit hit (429). cooling down window... Retrying in {r}s")
                     time.sleep(1)
                 ph.empty()
             else:
@@ -175,7 +166,7 @@ def safe_generate_text(prompt_text):
 def safe_generate_audio(audio_bytes):
     client = genai.Client()
     max_attempts = 3
-    base_delay = 5.0
+    base_delay = 4.0
     
     for attempt in range(max_attempts):
         try:
@@ -186,19 +177,18 @@ def safe_generate_audio(audio_bytes):
                     types.Part.from_bytes(data=audio_bytes, mime_type="audio/wav"),
                 ],
             )
-            time.sleep(1)
             return resp.text
         except ClientError as e:
             msg = str(e)
             if "429" in msg or "RESOURCE_EXHAUSTED" in msg or "quota" in msg.lower():
                 if attempt == max_attempts - 1:
-                    st.error("API quota limit completely exhausted after multiple retries.")
+                    st.error("Free-tier quota limit exhausted. Please wait 1 minute before sending another message.")
                     return None
                 
                 calculated_delay = (base_delay * (2 ** attempt)) + random.random()
                 ph = st.empty()
                 for r in range(int(calculated_delay), 0, -1):
-                    ph.warning(f"🔄 Rate limit hit (429). Backing off... Retrying in {r}s (Attempt {attempt + 1}/{max_attempts-1})")
+                    ph.warning(f"🔄 Rate limit hit (429). cooling down window... Retrying in {r}s")
                     time.sleep(1)
                 ph.empty()
             else:
@@ -224,8 +214,7 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
     
-    # Session reset action item to instantly clear memory blocks
-    if st.button("🗑️ Clear Active Session", use_container_width=True):
+    if st.button("🗑️ Clear Session & Quota Locks", use_container_width=True):
         st.session_state.chat_history = []
         st.session_state.last_processed_audio = None
         st.rerun()
@@ -265,7 +254,6 @@ if menu_selection == "🏠 Home Workspace":
     )
 
     col1, col2 = st.columns(2)
-
     with col1:
         st.markdown("""
             <div class="hero-card">
@@ -289,37 +277,39 @@ if menu_selection == "🏠 Home Workspace":
         unsafe_allow_html=True,
     )
 
-    # Output history first so things render smoothly
+    # Render History Layout
     for message in st.session_state.chat_history:
         avatar_icon = "👤" if message["role"] == "user" else "✨"
         with st.chat_message(message["role"], avatar=avatar_icon):
             st.markdown(message["text"])
 
-    voice_audio = st.audio_input("Record a voice message", sample_rate=16000)
-    text_input = st.chat_input("Message Savan Audio Lab...")
+    # --- INPUT FORM (CRITICAL FREE-TIER RATE LOCK FIX) ---
+    with st.form("input_pipeline_form", clear_on_submit=True):
+        voice_audio = st.audio_input("Record a voice message", sample_rate=16000)
+        text_input = st.text_input("Or type your message here...", placeholder="Message Savan Audio Lab...")
+        submit_btn = st.form_submit_button("🚀 Send Message", use_container_width=True)
 
-    # --- TEXT INPUT HANDLER ---
-    if text_input:
-        st.session_state.chat_history.append({"role": "user", "text": text_input})
-        with st.chat_message("user", avatar="👤"):
-            st.markdown(text_input)
+    if submit_btn:
+        # 1. TEXT PIPELINE ACTION
+        if text_input.strip() != "":
+            st.session_state.chat_history.append({"role": "user", "text": text_input})
+            with st.chat_message("user", avatar="👤"):
+                st.markdown(text_input)
 
-        with st.chat_message("assistant", avatar="✨"):
-            with st.spinner("Processing system context..."):
-                response_content = safe_generate_text(text_input)
+            with st.chat_message("assistant", avatar="✨"):
+                with st.spinner("Processing system context..."):
+                    response_content = safe_generate_text(text_input)
 
-            if response_content:
-                st.markdown(response_content)
-                st.session_state.chat_history.append({"role": "assistant", "text": response_content})
-                st.rerun()
+                if response_content:
+                    st.markdown(response_content)
+                    st.session_state.chat_history.append({"role": "assistant", "text": response_content})
+                    st.rerun()
 
-    # --- VOICE INPUT HANDLER ---
-    elif voice_audio is not None:
-        audio_bytes = voice_audio.read()
-        
-        # Only query Gemini if this is a brand-new audio sample to stop quota drainage loops
-        if st.session_state.last_processed_audio != audio_bytes:
+        # 2. VOICE PIPELINE ACTION
+        elif voice_audio is not None:
+            audio_bytes = voice_audio.read()
             
+            st.session_state.chat_history.append({"role": "user", "text": "🎤 Voice question recorded"})
             with st.chat_message("user", avatar="👤"):
                 st.markdown("🎤 Voice question recorded")
                 st.audio(audio_bytes, format="audio/wav")
@@ -330,11 +320,7 @@ if menu_selection == "🏠 Home Workspace":
 
                 if response_content:
                     st.markdown(response_content)
-                    st.session_state.chat_history.append({"role": "user", "text": "🎤 Voice question recorded"})
                     st.session_state.chat_history.append({"role": "assistant", "text": response_content})
-                    
-                    # Store audio file structure inside session state to halt infinite loops
-                    st.session_state.last_processed_audio = audio_bytes
                     st.rerun()
 
 elif menu_selection == "📖 Engineering Guide":
