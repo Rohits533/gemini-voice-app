@@ -12,7 +12,7 @@ st.set_page_config(
     layout="wide",
 )
 
-# Initialize functional session state structures
+# Initialize session state variables
 if "sidebar_expanded" not in st.session_state:
     st.session_state.sidebar_expanded = True
 if "chat_history" not in st.session_state:
@@ -20,72 +20,49 @@ if "chat_history" not in st.session_state:
 if "processed_hashes" not in st.session_state:
     st.session_state.processed_hashes = set()
 
-# Explicitly toggle state parameters on manual invocation
-def toggle_sidebar():
-    st.session_state.sidebar_expanded = not st.session_state.sidebar_expanded
-
-# Build the layout toggles dynamically based on session states
-sidebar_css = ""
-if not st.session_state.sidebar_expanded:
-    sidebar_css = """
-    [data-testid="stSidebar"] {
-        display: none !important;
-        width: 0px !important;
-    }
-    """
-else:
-    sidebar_css = """
-    [data-testid="stSidebar"] {
-        display: block !important;
-        width: 280px !important;
-    }
-    """
-
-st.markdown(f"""
+st.markdown("""
 <style>
-/* Clean up global Streamlit decorations */
-[data-testid="stHeader"], footer {{ visibility: hidden; display: none; }}
+/* Hide default header wrappers completely to keep UI seamless */
+[data-testid="stHeader"], footer { visibility: hidden; display: none; }
 
-/* Apply dynamic structural configuration overrides */
-{sidebar_css}
-
-.stApp {{
+.stApp {
     background: radial-gradient(circle at top right, #1f1b2e, #0f0c15 60%);
     color: #f3f4f6;
     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-}}
+}
 
-[data-testid="stSidebar"] {{
+[data-testid="stSidebar"] {
     background-color: #12101a !important;
     border-right: 1px solid rgba(255,255,255,0.03) !important;
-}}
+    transition: width 0.3s ease-in-out;
+}
 
-div[data-testid="stRadio"] > label {{
+div[data-testid="stRadio"] > label {
     display: none;
-}}
+}
 
-div[data-testid="stRadio"] [data-testid="stMarkdownContainer"] p {{
+div[data-testid="stRadio"] [data-testid="stMarkdownContainer"] p {
     font-size: 1rem !important;
     color: #9ca3af !important;
     font-weight: 500 !important;
     padding: 6px 0px;
-}}
+}
 
-div[data-testid="stRadio"] input[type="radio"]:checked + div p {{
+div[data-testid="stRadio"] input[type="radio"]:checked + div p {
     color: #ec4899 !important;
     font-weight: 600 !important;
-}}
+}
 
-.hero-card {{
+.hero-card {
     background: linear-gradient(135deg, #1d182b, #110e1a);
     border: 1px solid rgba(255,255,255,0.04);
     border-radius: 16px;
     padding: 1.75rem;
     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     margin-bottom: 1.25rem;
-}}
+}
 
-.tech-badge {{
+.tech-badge {
     background: rgba(236, 72, 153, 0.1);
     color: #ec4899;
     border: 1px solid rgba(236, 72, 153, 0.2);
@@ -96,9 +73,9 @@ div[data-testid="stRadio"] input[type="radio"]:checked + div p {{
     display: inline-block;
     margin-right: 6px;
     margin-bottom: 6px;
-}}
+}
 
-.sidebar-history-box {{
+.sidebar-history-box {
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.04);
     border-radius: 10px;
@@ -106,22 +83,22 @@ div[data-testid="stRadio"] input[type="radio"]:checked + div p {{
     margin-bottom: 8px;
     font-size: 0.85rem;
     color: #d1d5db;
-}}
+}
 
-div[data-testid="stChatMessage"] {{
+div[data-testid="stChatMessage"] {
     background-color: rgba(255, 255, 255, 0.06) !important; 
     border: 1px solid rgba(255, 255, 255, 0.08) !important;
     border-radius: 12px !important;
     padding: 1rem !important;
     margin-bottom: 0.75rem !important;
-}}
+}
 
-div[data-testid="stChatMessage"] p {{
+div[data-testid="stChatMessage"] p {
     color: #f3f4f6 !important;
     font-size: 0.95rem !important;
-}}
+}
 
-.modern-portfolio-btn {{
+.modern-portfolio-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -136,24 +113,30 @@ div[data-testid="stChatMessage"] p {{
     transition: all 0.3s ease;
     border: 1px solid rgba(255, 255, 255, 0.1);
     margin-top: 5px;
-}}
+}
 
-.modern-portfolio-btn:hover {{
+.modern-portfolio-btn:hover {
     background: linear-gradient(135deg, #f43f5e 0%, #a855f7 100%);
     box-shadow: 0 6px 20px rgba(236, 72, 153, 0.5), 0 0 10px rgba(139, 92, 246, 0.3);
     transform: translateY(-2px);
     color: #ffffff !important;
-}}
-
-/* Pin structural layout button accurately above UI background profiles */
-div.element-container:has(button[key="sidebar_toggle_btn"]) {{
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    z-index: 999999;
-}}
+}
 </style>
 """, unsafe_allow_html=True)
+
+# If sidebar is collapsed, shrink its size globally via injected CSS block
+if not st.session_state.sidebar_expanded:
+    st.markdown("""
+    <style>
+    [data-testid="stSidebar"] { width: 60px !important; min-width: 60px !important; }
+    </style>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("""
+    <style>
+    [data-testid="stSidebar"] { width: 280px !important; min-width: 280px !important; }
+    </style>
+    """, unsafe_allow_html=True)
 
 def safe_generate_text(prompt_text):
     client = genai.Client()
@@ -194,31 +177,46 @@ def safe_generate_audio(audio_bytes):
         st.error(f"Unexpected Pipeline Error: {str(e)}")
         return None
 
-# Render manual layout toggle button 
-btn_label = "◀ Hide Menu" if st.session_state.sidebar_expanded else "☰ Open Menu"
-st.button(btn_label, key="sidebar_toggle_btn", on_click=toggle_sidebar)
-
+# Render Sidebar Elements
 with st.sidebar:
-    st.markdown('<h2 style="color:#fff; font-weight:800; margin-bottom:2rem; letter-spacing:-1px; margin-top:35px;">✨ Savan Audio Lab</h2>', unsafe_allow_html=True)
-    menu_selection = st.radio("Navigation Links", ["🏠 Home Workspace", "📖 Engineering Guide", "ℹ️ About Application"])
-    st.markdown('<br><hr style="border-color: rgba(255,255,255,0.05);"><br>', unsafe_allow_html=True)
-    
-    if st.button("🗑️ Clear Cache & Reset System", use_container_width=True):
-        st.session_state.chat_history = []
-        st.session_state.processed_hashes = set()
-        st.rerun()
-        
-    st.markdown('<br><p style="font-size:0.75rem; color:#6b7280; text-transform:uppercase; font-weight:700; letter-spacing:1px; margin-bottom:12px;">📜 Chat History Logs</p>', unsafe_allow_html=True)
-    if not st.session_state.chat_history:
-        st.markdown('<p style="font-size:0.85rem; color:#4b5563; font-style:italic;">No recent sessions found.</p>', unsafe_allow_html=True)
-    else:
-        for msg in st.session_state.chat_history:
-            role_label = "👤 You" if msg["role"] == "user" else "✨ Assistant"
-            short_text = msg["text"][:35] + "..." if len(msg["text"]) > 35 else msg["text"]
-            st.markdown(f'<div class="sidebar-history-box"><strong>{role_label}:</strong> {short_text}</div>', unsafe_allow_html=True)
+    if st.session_state.sidebar_expanded:
+        # Top line setup with a inline layout button right inside the header
+        col_side_title, col_side_btn = st.columns([4, 1])
+        with col_side_title:
+            st.markdown('<h3 style="color:#fff; font-weight:800; margin-top:5px; letter-spacing:-1px;">✨ Savan Lab</h3>', unsafe_allow_html=True)
+        with col_side_btn:
+            if st.button("◀", help="Collapse Menu"):
+                st.session_state.sidebar_expanded = False
+                st.rerun()
 
+        menu_selection = st.radio("Navigation Links", ["🏠 Home Workspace", "📖 Engineering Guide", "ℹ️ About Application"])
+        st.markdown('<br><hr style="border-color: rgba(255,255,255,0.05);"><br>', unsafe_allow_html=True)
+        
+        if st.button("🗑️ Clear Cache & Reset System", use_container_width=True):
+            st.session_state.chat_history = []
+            st.session_state.processed_hashes = set()
+            st.rerun()
+            
+        st.markdown('<br><p style="font-size:0.75rem; color:#6b7280; text-transform:uppercase; font-weight:700; letter-spacing:1px; margin-bottom:12px;">📜 Chat History Logs</p>', unsafe_allow_html=True)
+        if not st.session_state.chat_history:
+            st.markdown('<p style="font-size:0.85rem; color:#4b5563; font-style:italic;">No recent sessions found.</p>', unsafe_allow_html=True)
+        else:
+            for msg in st.session_state.chat_history:
+                role_label = "👤 You" if msg["role"] == "user" else "✨ Assistant"
+                short_text = msg["text"][:35] + "..." if len(msg["text"]) > 35 else msg["text"]
+                st.markdown(f'<div class="sidebar-history-box"><strong>{role_label}:</strong> {short_text}</div>', unsafe_allow_html=True)
+    else:
+        # When collapsed, only render a single clean vertical trigger button
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("▶", help="Expand Menu"):
+            st.session_state.sidebar_expanded = True
+            st.rerun()
+        # Default fallback selection when closed
+        menu_selection = "🏠 Home Workspace"
+
+# Main Page Contents
 if menu_selection == "🏠 Home Workspace":
-    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0; margin-top:45px;">Voice Workspace</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">Voice Workspace</h1>', unsafe_allow_html=True)
     st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">Use your voice or type below to interact with the audio asset platform.</p>', unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
@@ -275,12 +273,12 @@ if menu_selection == "🏠 Home Workspace":
                     st.rerun()
 
 elif menu_selection == "📖 Engineering Guide":
-    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0; margin-top:45px;">Architecture & Guide</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">Architecture & Guide</h1>', unsafe_allow_html=True)
     st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">A technical overview explaining how this advanced multimodal voice workspace was engineered.</p>', unsafe_allow_html=True)
     st.markdown('<div class="hero-card"><h3 style="color:#fff; font-weight:700; margin-bottom:10px;">🛠️ The Technology Stack</h3><span class="tech-badge">Python 3.11</span><span class="tech-badge">Google GenAI SDK</span><span class="tech-badge">Gemini 2.5 Flash</span><span class="tech-badge">Streamlit UI Engine</span><span class="tech-badge">Custom CSS3 Injection</span><p style="color:#9ca3af; font-size:0.95rem; line-height:1.6; margin-top:10px;">This app keeps both text chat and voice input, and routes each to Gemini.</p></div>', unsafe_allow_html=True)
 
 elif menu_selection == "ℹ️ About Application":
-    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0; margin-top:45px;">About Savan Audio Lab</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">About Savan Audio Lab</h1>', unsafe_allow_html=True)
     st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">Interactive voice + chat workspace built with Streamlit and Gemini.</p>', unsafe_allow_html=True)
     st.markdown('<div class="hero-card"><h3 style="color:#fff; font-weight:700; margin-bottom:10px;">About This Application</h3><p style="color:#9ca3af; font-size:0.95rem; line-height:1.7; margin-bottom:12px;">Savan Audio Lab is a modern AI voice and chat interface. It lets users speak or type a question, then sends it to Gemini for a fast response inside a polished workspace.</p><p style="color:#9ca3af; font-size:0.95rem; line-height:1.7; margin-bottom:12px;">The app includes a voice input flow, a text chat flow, session history, and a clean sidebar layout for easy navigation.</p><p style="color:#9ca3af; font-size:0.95rem; line-height:1.7; margin-bottom:0;">Hi, I’m Rohit Savan, 17 years old, from Mumbai.</p></div>', unsafe_allow_html=True)
     st.markdown('<div class="hero-card" style="background: linear-gradient(135deg, #23162d, #120d18);"><h3 style="color:#fff; font-weight:700; margin-bottom:10px;">What This App Does</h3><p style="color:#cbd5e1; font-size:0.95rem; line-height:1.7; margin-bottom:0;">It combines voice input, text chat, session history, and a polished sidebar layout. You can ask a question by typing or speaking, and Gemini will respond in the same interface.</p></div>', unsafe_allow_html=True)
