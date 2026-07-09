@@ -140,8 +140,8 @@ div[data-testid="stChatMessage"] p {
 
 def safe_generate_text(prompt_text):
     client = genai.Client()
-    max_attempts = 4
-    base_delay = 2.0  # Initial delay in seconds
+    max_attempts = 3
+    base_delay = 5.0  # Increased backoff delay for stable free tier cooling
     
     for attempt in range(max_attempts):
         try:
@@ -149,6 +149,8 @@ def safe_generate_text(prompt_text):
                 model="gemini-2.5-flash",
                 contents=prompt_text,
             )
+            # Add a small 1-second client throttle to buffer requests
+            time.sleep(1)
             return resp.text
         except ClientError as e:
             msg = str(e)
@@ -157,11 +159,8 @@ def safe_generate_text(prompt_text):
                     st.error("API quota limit completely exhausted after multiple retries.")
                     return None
                 
-                # Formula: base_delay * (2 ^ attempt) + random jitter (0-1 seconds)
                 calculated_delay = (base_delay * (2 ** attempt)) + random.random()
-                
                 ph = st.empty()
-                # Create a countdown mechanism for UI readability
                 for r in range(int(calculated_delay), 0, -1):
                     ph.warning(f"🔄 Rate limit hit (429). Backing off... Retrying in {r}s (Attempt {attempt + 1}/{max_attempts-1})")
                     time.sleep(1)
@@ -175,8 +174,8 @@ def safe_generate_text(prompt_text):
 
 def safe_generate_audio(audio_bytes):
     client = genai.Client()
-    max_attempts = 4
-    base_delay = 2.0  # Initial delay in seconds
+    max_attempts = 3
+    base_delay = 5.0
     
     for attempt in range(max_attempts):
         try:
@@ -187,6 +186,7 @@ def safe_generate_audio(audio_bytes):
                     types.Part.from_bytes(data=audio_bytes, mime_type="audio/wav"),
                 ],
             )
+            time.sleep(1)
             return resp.text
         except ClientError as e:
             msg = str(e)
@@ -195,9 +195,7 @@ def safe_generate_audio(audio_bytes):
                     st.error("API quota limit completely exhausted after multiple retries.")
                     return None
                 
-                # Formula: base_delay * (2 ^ attempt) + random jitter (0-1 seconds)
                 calculated_delay = (base_delay * (2 ** attempt)) + random.random()
-                
                 ph = st.empty()
                 for r in range(int(calculated_delay), 0, -1):
                     ph.warning(f"🔄 Rate limit hit (429). Backing off... Retrying in {r}s (Attempt {attempt + 1}/{max_attempts-1})")
@@ -225,6 +223,14 @@ with st.sidebar:
         '<br><hr style="border-color: rgba(255,255,255,0.05);"><br>',
         unsafe_allow_html=True,
     )
+    
+    # Session reset action item to instantly clear memory blocks
+    if st.button("🗑️ Clear Active Session", use_container_width=True):
+        st.session_state.chat_history = []
+        st.session_state.last_processed_audio = None
+        st.rerun()
+        
+    st.markdown('<br>', unsafe_allow_html=True)
     st.markdown(
         '<p style="font-size:0.75rem; color:#6b7280; text-transform:uppercase; font-weight:700; letter-spacing:1px; margin-bottom:12px;">📜 Chat History Logs</p>',
         unsafe_allow_html=True,
