@@ -6,22 +6,29 @@ from google import genai
 from google.genai import types
 from google.genai.errors import ClientError
 
-st.set_page_config(
-    page_title="Savan Audio Lab",
-    page_icon="🎙️",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
-
-# Initialize fundamental structural session state parameters
+# 1. Initialize structural session states first
+if "sidebar_expanded" not in st.session_state:
+    st.session_state.sidebar_expanded = True
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "processed_hashes" not in st.session_state:
     st.session_state.processed_hashes = set()
 
+# 2. Toggle sidebar callback function
+def toggle_sidebar():
+    st.session_state.sidebar_expanded = not st.session_state.sidebar_expanded
+
+# 3. Dynamic page config tied directly to python session state
+st.set_page_config(
+    page_title="Savan Audio Lab",
+    page_icon="🎙️",
+    layout="wide",
+    initial_sidebar_state="expanded" if st.session_state.sidebar_expanded else "collapsed",
+)
+
 st.markdown("""
 <style>
-/* Hide default header wrappers completely to clean up layout */
+/* Completely hide default header and footer elements */
 [data-testid="stHeader"], footer { visibility: hidden; display: none; }
 
 .stApp {
@@ -121,17 +128,16 @@ div[data-testid="stChatMessage"] p {
     color: #ffffff !important;
 }
 
-/* CUSTOM SIDEBAR TOGGLE CONTAINER */
-.custom-toggle-container {
+/* Float styling for the manual sidebar toggle button */
+div.element-container:has(button[key="sidebar_toggle_btn"]) {
     position: fixed;
-    top: 15px;
-    left: 15px;
-    z-index: 999999;
+    top: 20px;
+    left: 20px;
+    z-index: 99999;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# Helper function to query the model text pipeline
 def safe_generate_text(prompt_text):
     client = genai.Client()
     try:
@@ -150,7 +156,6 @@ def safe_generate_text(prompt_text):
         st.error(f"Unexpected Pipeline Error: {str(e)}")
         return None
 
-# Helper function to query the model audio pipeline
 def safe_generate_audio(audio_bytes):
     client = genai.Client()
     try:
@@ -172,12 +177,9 @@ def safe_generate_audio(audio_bytes):
         st.error(f"Unexpected Pipeline Error: {str(e)}")
         return None
 
-# Render floating custom toggle button at top-left
-st.markdown('<div class="custom-toggle-container">', unsafe_allow_html=True)
-if st.button("☰ Menu", key="custom_sidebar_toggle"):
-    # Since Streamlit handles visibility dynamically via state engine resets, triggering rerun switches viewport bounds
-    st.html("<script>window.parent.document.querySelector('button[aria-label=\"Open sidebar\"]').click();</script>")
-st.markdown('</div>', unsafe_allow_html=True)
+# Native floating UI sidebar controller button
+btn_label = "◀ Close Sidebar" if st.session_state.sidebar_expanded else "☰ Open Menu"
+st.button(btn_label, key="sidebar_toggle_btn", on_click=toggle_sidebar)
 
 with st.sidebar:
     st.markdown('<h2 style="color:#fff; font-weight:800; margin-bottom:2rem; letter-spacing:-1px;">✨ Savan Audio Lab</h2>', unsafe_allow_html=True)
@@ -199,8 +201,7 @@ with st.sidebar:
             st.markdown(f'<div class="sidebar-history-box"><strong>{role_label}:</strong> {short_text}</div>', unsafe_allow_html=True)
 
 if menu_selection == "🏠 Home Workspace":
-    # Add minor padding offset to the title block to clear the floating custom menu button
-    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0; margin-top:20px;">Voice Workspace</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0; margin-top:40px;">Voice Workspace</h1>', unsafe_allow_html=True)
     st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">Use your voice or type below to interact with the audio asset platform.</p>', unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
@@ -211,17 +212,14 @@ if menu_selection == "🏠 Home Workspace":
 
     st.markdown('<br><h2 style="font-weight:800; margin-bottom:1rem; letter-spacing:-0.5px;">Voice + Chat Input</h2>', unsafe_allow_html=True)
 
-    # Render History Layout cleanly
     for message in st.session_state.chat_history:
         avatar_icon = "👤" if message["role"] == "user" else "✨"
         with st.chat_message(message["role"], avatar=avatar_icon):
             st.markdown(message["text"])
 
-    # UI Inputs outside of forms to prevent layout clipping
     voice_audio = st.audio_input("Record a voice message", sample_rate=16000)
     text_input = st.chat_input("Message Savan Audio Lab...")
 
-    # --- PERMANENT HASH LOCK EXECUTION ---
     if text_input:
         text_hash = hashlib.md5(text_input.encode()).hexdigest()
         if text_hash not in st.session_state.processed_hashes:
@@ -260,12 +258,12 @@ if menu_selection == "🏠 Home Workspace":
                     st.rerun()
 
 elif menu_selection == "📖 Engineering Guide":
-    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0; margin-top:20px;">Architecture & Guide</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0; margin-top:40px;">Architecture & Guide</h1>', unsafe_allow_html=True)
     st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">A technical overview explaining how this advanced multimodal voice workspace was engineered.</p>', unsafe_allow_html=True)
     st.markdown('<div class="hero-card"><h3 style="color:#fff; font-weight:700; margin-bottom:10px;">🛠️ The Technology Stack</h3><span class="tech-badge">Python 3.11</span><span class="tech-badge">Google GenAI SDK</span><span class="tech-badge">Gemini 2.5 Flash</span><span class="tech-badge">Streamlit UI Engine</span><span class="tech-badge">Custom CSS3 Injection</span><p style="color:#9ca3af; font-size:0.95rem; line-height:1.6; margin-top:10px;">This app keeps both text chat and voice input, and routes each to Gemini.</p></div>', unsafe_allow_html=True)
 
 elif menu_selection == "ℹ️ About Application":
-    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0; margin-top:20px;">About Savan Audio Lab</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0; margin-top:40px;">About Savan Audio Lab</h1>', unsafe_allow_html=True)
     st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">Interactive voice + chat workspace built with Streamlit and Gemini.</p>', unsafe_allow_html=True)
     st.markdown('<div class="hero-card"><h3 style="color:#fff; font-weight:700; margin-bottom:10px;">About This Application</h3><p style="color:#9ca3af; font-size:0.95rem; line-height:1.7; margin-bottom:12px;">Savan Audio Lab is a modern AI voice and chat interface. It lets users speak or type a question, then sends it to Gemini for a fast response inside a polished workspace.</p><p style="color:#9ca3af; font-size:0.95rem; line-height:1.7; margin-bottom:12px;">The app includes a voice input flow, a text chat flow, session history, and a clean sidebar layout for easy navigation.</p><p style="color:#9ca3af; font-size:0.95rem; line-height:1.7; margin-bottom:0;">Hi, I’m Rohit Savan, 17 years old, from Mumbai.</p></div>', unsafe_allow_html=True)
     st.markdown('<div class="hero-card" style="background: linear-gradient(135deg, #23162d, #120d18);"><h3 style="color:#fff; font-weight:700; margin-bottom:10px;">What This App Does</h3><p style="color:#cbd5e1; font-size:0.95rem; line-height:1.7; margin-bottom:0;">It combines voice input, text chat, session history, and a polished sidebar layout. You can ask a question by typing or speaking, and Gemini will respond in the same interface.</p></div>', unsafe_allow_html=True)
