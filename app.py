@@ -1,5 +1,6 @@
 import streamlit as st
 import time
+import random
 from google import genai
 from google.genai import types
 from google.genai.errors import ClientError
@@ -139,7 +140,10 @@ div[data-testid="stChatMessage"] p {
 
 def safe_generate_text(prompt_text):
     client = genai.Client()
-    for attempt in range(3):
+    max_attempts = 4
+    base_delay = 2.0  # Initial delay in seconds
+    
+    for attempt in range(max_attempts):
         try:
             resp = client.models.generate_content(
                 model="gemini-2.5-flash",
@@ -149,13 +153,17 @@ def safe_generate_text(prompt_text):
         except ClientError as e:
             msg = str(e)
             if "429" in msg or "RESOURCE_EXHAUSTED" in msg or "quota" in msg.lower():
-                if attempt == 2:
-                    st.error("API quota/rate limit reached.")
+                if attempt == max_attempts - 1:
+                    st.error("API quota limit completely exhausted after multiple retries.")
                     return None
-                delay = 5 * (2 ** attempt)
+                
+                # Formula: base_delay * (2 ^ attempt) + random jitter (0-1 seconds)
+                calculated_delay = (base_delay * (2 ** attempt)) + random.random()
+                
                 ph = st.empty()
-                for r in range(delay, 0, -1):
-                    ph.warning(f"Rate limit hit. Retrying in {r}s...")
+                # Create a countdown mechanism for UI readability
+                for r in range(int(calculated_delay), 0, -1):
+                    ph.warning(f"🔄 Rate limit hit (429). Backing off... Retrying in {r}s (Attempt {attempt + 1}/{max_attempts-1})")
                     time.sleep(1)
                 ph.empty()
             else:
@@ -167,7 +175,10 @@ def safe_generate_text(prompt_text):
 
 def safe_generate_audio(audio_bytes):
     client = genai.Client()
-    for attempt in range(3):
+    max_attempts = 4
+    base_delay = 2.0  # Initial delay in seconds
+    
+    for attempt in range(max_attempts):
         try:
             resp = client.models.generate_content(
                 model="gemini-2.5-flash",
@@ -180,13 +191,16 @@ def safe_generate_audio(audio_bytes):
         except ClientError as e:
             msg = str(e)
             if "429" in msg or "RESOURCE_EXHAUSTED" in msg or "quota" in msg.lower():
-                if attempt == 2:
-                    st.error("API quota/rate limit reached.")
+                if attempt == max_attempts - 1:
+                    st.error("API quota limit completely exhausted after multiple retries.")
                     return None
-                delay = 5 * (2 ** attempt)
+                
+                # Formula: base_delay * (2 ^ attempt) + random jitter (0-1 seconds)
+                calculated_delay = (base_delay * (2 ** attempt)) + random.random()
+                
                 ph = st.empty()
-                for r in range(delay, 0, -1):
-                    ph.warning(f"Rate limit hit. Retrying in {r}s...")
+                for r in range(int(calculated_delay), 0, -1):
+                    ph.warning(f"🔄 Rate limit hit (429). Backing off... Retrying in {r}s (Attempt {attempt + 1}/{max_attempts-1})")
                     time.sleep(1)
                 ph.empty()
             else:
@@ -376,7 +390,6 @@ elif menu_selection == "ℹ️ About Application":
         </div>
     """, unsafe_allow_html=True)
 
-    # Render upgraded, glowing custom gradient portfolio link button
     st.markdown(
         '<a href="https://rohits533.github.io" target="_blank" class="modern-portfolio-btn">✨ View Portfolio</a>',
         unsafe_allow_html=True
