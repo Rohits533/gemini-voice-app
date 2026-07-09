@@ -21,21 +21,27 @@ if "processed_hashes" not in st.session_state:
 
 st.markdown("""
 <style>
-/* 1. MATCH THE TOP HEADER BAR BLENDING WITH THE THEME */
+/* 1. FORCE THE SIDEBAR TOGGLE ARROW (>> AND <<) TO BE GLOWING BRIGHT PINK */
 [data-testid="stHeader"] {
-    background-color: #151122 !important; /* Blends natively into your dark UI theme */
+    background-color: #151122 !important; /* Matches your UI background profile */
     border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
 }
 
-/* Force all top header button icons (including the >> arrow) to be bright and clean */
-[data-testid="stHeader"] button, 
-[data-testid="stHeader"] a,
-[data-testid="stHeader"] svg {
-    color: #ec4899 !important; /* High-visibility theme pink for interaction items */
-    fill: #ec4899 !important;
+/* Hard target the button wrapper and SVG path directly to force the bright pink color */
+[data-testid="stHeader"] button,
+button[aria-label="Open sidebar"],
+button[aria-label="Close sidebar"],
+.stApp [data-testid="stHeader"] svg {
+    color: #ff4da6 !important;
+    fill: #ff4da6 !important;
+    stroke: #ff4da6 !important;
+    filter: drop-shadow(0px 0px 8px #ec4899) brightness(1.5) !important; /* Adds a nice neon glow so it's super visible */
 }
 
-/* Clean up default footer elements */
+/* Clean up extra default decoration items at the top right */
+[data-testid="stHeader"] > div:first-child {
+    display: none !important;
+}
 footer { visibility: hidden; display: none; }
 
 /* 2. MAIN APPLICATION WORKSPACE SKINNING */
