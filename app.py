@@ -6,7 +6,6 @@ from google import genai
 from google.genai import types
 from google.genai.errors import ClientError
 
-# Ensure the app starts with the sidebar open and clear
 st.set_page_config(
     page_title="Savan Audio Lab",
     page_icon="🎙️",
@@ -20,38 +19,54 @@ if "chat_history" not in st.session_state:
 if "processed_hashes" not in st.session_state:
     st.session_state.processed_hashes = set()
 
-# CSS that matches your dark mode style WITHOUT hiding structural elements
 st.markdown("""
 <style>
-/* Style the main application body */
+/* 1. MATCH THE TOP HEADER BAR BLENDING WITH THE THEME */
+[data-testid="stHeader"] {
+    background-color: #151122 !important; /* Blends natively into your dark UI theme */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+}
+
+/* Force all top header button icons (including the >> arrow) to be bright and clean */
+[data-testid="stHeader"] button, 
+[data-testid="stHeader"] a,
+[data-testid="stHeader"] svg {
+    color: #ec4899 !important; /* High-visibility theme pink for interaction items */
+    fill: #ec4899 !important;
+}
+
+/* Clean up default footer elements */
+footer { visibility: hidden; display: none; }
+
+/* 2. MAIN APPLICATION WORKSPACE SKINNING */
 .stApp {
     background: radial-gradient(circle at top right, #1f1b2e, #0f0c15 60%);
     color: #f3f4f6;
     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* Style the sidebar wrapper */
 [data-testid="stSidebar"] {
     background-color: #12101a !important;
     border-right: 1px solid rgba(255,255,255,0.03) !important;
+    width: 280px !important;
 }
 
-/* Style the navigation links radio group */
 div[data-testid="stRadio"] > label {
     display: none;
 }
+
 div[data-testid="stRadio"] [data-testid="stMarkdownContainer"] p {
     font-size: 1rem !important;
     color: #9ca3af !important;
     font-weight: 500 !important;
     padding: 6px 0px;
 }
+
 div[data-testid="stRadio"] input[type="radio"]:checked + div p {
     color: #ec4899 !important;
     font-weight: 600 !important;
 }
 
-/* Info Cards */
 .hero-card {
     background: linear-gradient(135deg, #1d182b, #110e1a);
     border: 1px solid rgba(255,255,255,0.04);
@@ -84,7 +99,6 @@ div[data-testid="stRadio"] input[type="radio"]:checked + div p {
     color: #d1d5db;
 }
 
-/* Chat boxes styling */
 div[data-testid="stChatMessage"] {
     background-color: rgba(255, 255, 255, 0.06) !important; 
     border: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -121,9 +135,6 @@ div[data-testid="stChatMessage"] p {
     transform: translateY(-2px);
     color: #ffffff !important;
 }
-
-/* Hide Streamlit default footer but leave header button accessible */
-footer { visibility: hidden; display: none; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -166,9 +177,9 @@ def safe_generate_audio(audio_bytes):
         st.error(f"Unexpected Pipeline Error: {str(e)}")
         return None
 
-# Sidebar Contents
+# Sidebar Content Structure
 with st.sidebar:
-    st.markdown('<h2 style="color:#fff; font-weight:800; margin-bottom:2rem; letter-spacing:-1px;">✨ Savan Audio Lab</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 style="color:#fff; font-weight:800; margin-bottom:2rem; letter-spacing:-1px; padding-top:10px;">✨ Savan Audio Lab</h2>', unsafe_allow_html=True)
     menu_selection = st.radio("Navigation Links", ["🏠 Home Workspace", "📖 Engineering Guide", "ℹ️ About Application"])
     st.markdown('<br><hr style="border-color: rgba(255,255,255,0.05);"><br>', unsafe_allow_html=True)
     
@@ -186,9 +197,9 @@ with st.sidebar:
             short_text = msg["text"][:35] + "..." if len(msg["text"]) > 35 else msg["text"]
             st.markdown(f'<div class="sidebar-history-box"><strong>{role_label}:</strong> {short_text}</div>', unsafe_allow_html=True)
 
-# Main App Navigation Router
+# Main Application Router
 if menu_selection == "🏠 Home Workspace":
-    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">Voice Workspace</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0; padding-top:15px;">Voice Workspace</h1>', unsafe_allow_html=True)
     st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">Use your voice or type below to interact with the audio asset platform.</p>', unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
@@ -245,12 +256,12 @@ if menu_selection == "🏠 Home Workspace":
                     st.rerun()
 
 elif menu_selection == "📖 Engineering Guide":
-    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">Architecture & Guide</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0; padding-top:15px;">Architecture & Guide</h1>', unsafe_allow_html=True)
     st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">A technical overview explaining how this advanced multimodal voice workspace was engineered.</p>', unsafe_allow_html=True)
     st.markdown('<div class="hero-card"><h3 style="color:#fff; font-weight:700; margin-bottom:10px;">🛠️ The Technology Stack</h3><span class="tech-badge">Python 3.11</span><span class="tech-badge">Google GenAI SDK</span><span class="tech-badge">Gemini 2.5 Flash</span><span class="tech-badge">Streamlit UI Engine</span><span class="tech-badge">Custom CSS3 Injection</span><p style="color:#9ca3af; font-size:0.95rem; line-height:1.6; margin-top:10px;">This app keeps both text chat and voice input, and routes each to Gemini.</p></div>', unsafe_allow_html=True)
 
 elif menu_selection == "ℹ️ About Application":
-    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">About Savan Audio Lab</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0; padding-top:15px;">About Savan Audio Lab</h1>', unsafe_allow_html=True)
     st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">Interactive voice + chat workspace built with Streamlit and Gemini.</p>', unsafe_allow_html=True)
     st.markdown('<div class="hero-card"><h3 style="color:#fff; font-weight:700; margin-bottom:10px;">About This Application</h3><p style="color:#9ca3af; font-size:0.95rem; line-height:1.7; margin-bottom:12px;">Savan Audio Lab is a modern AI voice and chat interface. It lets users speak or type a question, then sends it to Gemini for a fast response inside a polished workspace.</p><p style="color:#9ca3af; font-size:0.95rem; line-height:1.7; margin-bottom:12px;">The app includes a voice input flow, a text chat flow, session history, and a clean sidebar layout for easy navigation.</p><p style="color:#9ca3af; font-size:0.95rem; line-height:1.7; margin-bottom:0;">Hi, I’m Rohit Savan, 17 years old, from Mumbai.</p></div>', unsafe_allow_html=True)
     st.markdown('<div class="hero-card" style="background: linear-gradient(135deg, #23162d, #120d18);"><h3 style="color:#fff; font-weight:700; margin-bottom:10px;">What This App Does</h3><p style="color:#cbd5e1; font-size:0.95rem; line-height:1.7; margin-bottom:0;">It combines voice input, text chat, session history, and a polished sidebar layout. You can ask a question by typing or speaking, and Gemini will respond in the same interface.</p></div>', unsafe_allow_html=True)
