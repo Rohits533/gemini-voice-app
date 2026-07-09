@@ -21,7 +21,26 @@ if "processed_hashes" not in st.session_state:
 
 st.markdown("""
 <style>
-[data-testid="stHeader"], footer { visibility: hidden; display: none; }
+/* MODIFIED: Keeps header container but hides background and default menu to preserve sidebar toggle */
+[data-testid="stHeader"] {
+    background-color: transparent !important;
+    background: none !important;
+}
+[data-testid="stHeader"] > div:first-child {
+    display: none; 
+}
+footer { 
+    visibility: hidden; 
+    display: none; 
+}
+
+/* ADDED: Ensures the sidebar toggle button is visible and fits the dark theme style */
+button[data-testid="sidebar-toggle"] {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #f3f4f6 !important;
+    border-radius: 8px !important;
+}
 
 .stApp {
     background: radial-gradient(circle at top right, #1f1b2e, #0f0c15 60%);
