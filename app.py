@@ -21,27 +21,32 @@ if "processed_hashes" not in st.session_state:
 
 st.markdown("""
 <style>
-/* 1. FORCE THE SIDEBAR TOGGLE ARROW (>> AND <<) TO BE GLOWING BRIGHT PINK */
+/* 1. RESTORE AND MAKE THE SIDEBAR TOGGLE ARROW BRILLIANT NEON PINK */
 [data-testid="stHeader"] {
-    background-color: #151122 !important; /* Matches your UI background profile */
+    background-color: #151122 !important; /* Perfectly matches your custom UI top bar */
     border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
 }
 
-/* Hard target the button wrapper and SVG path directly to force the bright pink color */
-[data-testid="stHeader"] button,
-button[aria-label="Open sidebar"],
+/* Hard target the exact native arrow toggle buttons to make them pop out clearly */
+button[aria-label="Open sidebar"], 
 button[aria-label="Close sidebar"],
-.stApp [data-testid="stHeader"] svg {
+button[aria-label="Open sidebar"] svg,
+button[aria-label="Close sidebar"] svg {
     color: #ff4da6 !important;
     fill: #ff4da6 !important;
     stroke: #ff4da6 !important;
-    filter: drop-shadow(0px 0px 8px #ec4899) brightness(1.5) !important; /* Adds a nice neon glow so it's super visible */
+    transform: scale(1.2) !important;
+    filter: drop-shadow(0px 0px 10px #ec4899) brightness(1.8) !important; /* Beautiful hot pink neon glow */
+    visibility: visible !important;
+    display: inline-flex !important;
 }
 
-/* Clean up extra default decoration items at the top right */
-[data-testid="stHeader"] > div:first-child {
-    display: none !important;
+/* Ensure other secondary header decoration items look cohesive */
+[data-testid="stHeader"] a,
+[data-testid="stHeader"] a svg {
+    color: #9ca3af !important;
 }
+
 footer { visibility: hidden; display: none; }
 
 /* 2. MAIN APPLICATION WORKSPACE SKINNING */
