@@ -87,6 +87,23 @@ div[data-testid="stRadio"] input[type="radio"]:checked + div p {
     border: 1px solid rgba(255,255,255,0.1) !important;
     border-radius: 30px !important;
 }
+
+/* ==========================================
+   FIX FOR CHAT BUBBLE VISIBILITY 
+   ========================================== */
+div[data-testid="stChatMessage"] {
+    background-color: rgba(255, 255, 255, 0.06) !important; 
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 12px !important;
+    padding: 1rem !important;
+    margin-bottom: 0.75rem !important;
+}
+
+/* Ensures chat text stands out brightly against the background workspace layout */
+div[data-testid="stChatMessage"] p {
+    color: #f3f4f6 !important;
+    font-size: 0.95rem !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -246,11 +263,11 @@ if menu_selection == "🏠 Home Workspace":
                 st.session_state.chat_history.append({"role": "assistant", "text": response_content})
                 st.rerun()
 
-    # --- VOICE INPUT HANDLER (CRITICAL FIX APPLIED HERE) ---
+    # --- VOICE INPUT HANDLER ---
     elif voice_audio is not None:
         audio_bytes = voice_audio.read()
         
-        # Only query Gemini if this is a brand-new audio sample
+        # Only query Gemini if this is a brand-new audio sample to stop quota drainage loops
         if st.session_state.last_processed_audio != audio_bytes:
             
             with st.chat_message("user", avatar="👤"):
