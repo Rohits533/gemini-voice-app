@@ -10,11 +10,10 @@ st.set_page_config(
     page_title="Savan Audio Lab",
     page_icon="🎙️",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 
-# Initialize session state variables
-if "sidebar_expanded" not in st.session_state:
-    st.session_state.sidebar_expanded = True
+# Initialize fundamental structural session state parameters
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 if "processed_hashes" not in st.session_state:
@@ -22,8 +21,17 @@ if "processed_hashes" not in st.session_state:
 
 st.markdown("""
 <style>
-/* Hide default header wrappers completely to keep UI seamless */
-[data-testid="stHeader"], footer { visibility: hidden; display: none; }
+/* Hides default top decorations and the right side dropdown menu, but preserves the left side toggle chevron icon */
+[data-testid="stHeader"] {
+    background-color: transparent !important;
+}
+[data-testid="stHeader"] > div:first-child {
+    display: none !important;
+}
+[data-testid="stHeader"] button[dir="ltr"] {
+    color: #f3f4f6 !important; /* Forces the default menu chevron button to stay bright white/gray */
+}
+footer { visibility: hidden; display: none; }
 
 .stApp {
     background: radial-gradient(circle at top right, #1f1b2e, #0f0c15 60%);
@@ -34,7 +42,7 @@ st.markdown("""
 [data-testid="stSidebar"] {
     background-color: #12101a !important;
     border-right: 1px solid rgba(255,255,255,0.03) !important;
-    transition: width 0.3s ease-in-out;
+    width: 280px !important;
 }
 
 div[data-testid="stRadio"] > label {
@@ -124,20 +132,6 @@ div[data-testid="stChatMessage"] p {
 </style>
 """, unsafe_allow_html=True)
 
-# If sidebar is collapsed, shrink its size globally via injected CSS block
-if not st.session_state.sidebar_expanded:
-    st.markdown("""
-    <style>
-    [data-testid="stSidebar"] { width: 60px !important; min-width: 60px !important; }
-    </style>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown("""
-    <style>
-    [data-testid="stSidebar"] { width: 280px !important; min-width: 280px !important; }
-    </style>
-    """, unsafe_allow_html=True)
-
 def safe_generate_text(prompt_text):
     client = genai.Client()
     try:
@@ -177,44 +171,25 @@ def safe_generate_audio(audio_bytes):
         st.error(f"Unexpected Pipeline Error: {str(e)}")
         return None
 
-# Render Sidebar Elements
 with st.sidebar:
-    if st.session_state.sidebar_expanded:
-        # Top line setup with a inline layout button right inside the header
-        col_side_title, col_side_btn = st.columns([4, 1])
-        with col_side_title:
-            st.markdown('<h3 style="color:#fff; font-weight:800; margin-top:5px; letter-spacing:-1px;">✨ Savan Lab</h3>', unsafe_allow_html=True)
-        with col_side_btn:
-            if st.button("◀", help="Collapse Menu"):
-                st.session_state.sidebar_expanded = False
-                st.rerun()
-
-        menu_selection = st.radio("Navigation Links", ["🏠 Home Workspace", "📖 Engineering Guide", "ℹ️ About Application"])
-        st.markdown('<br><hr style="border-color: rgba(255,255,255,0.05);"><br>', unsafe_allow_html=True)
+    st.markdown('<h2 style="color:#fff; font-weight:800; margin-bottom:2rem; letter-spacing:-1px;">✨ Savan Audio Lab</h2>', unsafe_allow_html=True)
+    menu_selection = st.radio("Navigation Links", ["🏠 Home Workspace", "📖 Engineering Guide", "ℹ️ About Application"])
+    st.markdown('<br><hr style="border-color: rgba(255,255,255,0.05);"><br>', unsafe_allow_html=True)
+    
+    if st.button("🗑️ Clear Cache & Reset System", use_container_width=True):
+        st.session_state.chat_history = []
+        st.session_state.processed_hashes = set()
+        st.rerun()
         
-        if st.button("🗑️ Clear Cache & Reset System", use_container_width=True):
-            st.session_state.chat_history = []
-            st.session_state.processed_hashes = set()
-            st.rerun()
-            
-        st.markdown('<br><p style="font-size:0.75rem; color:#6b7280; text-transform:uppercase; font-weight:700; letter-spacing:1px; margin-bottom:12px;">📜 Chat History Logs</p>', unsafe_allow_html=True)
-        if not st.session_state.chat_history:
-            st.markdown('<p style="font-size:0.85rem; color:#4b5563; font-style:italic;">No recent sessions found.</p>', unsafe_allow_html=True)
-        else:
-            for msg in st.session_state.chat_history:
-                role_label = "👤 You" if msg["role"] == "user" else "✨ Assistant"
-                short_text = msg["text"][:35] + "..." if len(msg["text"]) > 35 else msg["text"]
-                st.markdown(f'<div class="sidebar-history-box"><strong>{role_label}:</strong> {short_text}</div>', unsafe_allow_html=True)
+    st.markdown('<br><p style="font-size:0.75rem; color:#6b7280; text-transform:uppercase; font-weight:700; letter-spacing:1px; margin-bottom:12px;">📜 Chat History Logs</p>', unsafe_allow_html=True)
+    if not st.session_state.chat_history:
+        st.markdown('<p style="font-size:0.85rem; color:#4b5563; font-style:italic;">No recent sessions found.</p>', unsafe_allow_html=True)
     else:
-        # When collapsed, only render a single clean vertical trigger button
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("▶", help="Expand Menu"):
-            st.session_state.sidebar_expanded = True
-            st.rerun()
-        # Default fallback selection when closed
-        menu_selection = "🏠 Home Workspace"
+        for msg in st.session_state.chat_history:
+            role_label = "👤 You" if msg["role"] == "user" else "✨ Assistant"
+            short_text = msg["text"][:35] + "..." if len(msg["text"]) > 35 else msg["text"]
+            st.markdown(f'<div class="sidebar-history-box"><strong>{role_label}:</strong> {short_text}</div>', unsafe_allow_html=True)
 
-# Main Page Contents
 if menu_selection == "🏠 Home Workspace":
     st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">Voice Workspace</h1>', unsafe_allow_html=True)
     st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">Use your voice or type below to interact with the audio asset platform.</p>', unsafe_allow_html=True)
@@ -227,14 +202,17 @@ if menu_selection == "🏠 Home Workspace":
 
     st.markdown('<br><h2 style="font-weight:800; margin-bottom:1rem; letter-spacing:-0.5px;">Voice + Chat Input</h2>', unsafe_allow_html=True)
 
+    # Render History Layout cleanly
     for message in st.session_state.chat_history:
         avatar_icon = "👤" if message["role"] == "user" else "✨"
         with st.chat_message(message["role"], avatar=avatar_icon):
             st.markdown(message["text"])
 
+    # UI Inputs outside of forms to prevent layout clipping
     voice_audio = st.audio_input("Record a voice message", sample_rate=16000)
     text_input = st.chat_input("Message Savan Audio Lab...")
 
+    # --- PERMANENT HASH LOCK EXECUTION ---
     if text_input:
         text_hash = hashlib.md5(text_input.encode()).hexdigest()
         if text_hash not in st.session_state.processed_hashes:
