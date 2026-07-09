@@ -6,11 +6,12 @@ from google import genai
 from google.genai import types
 from google.genai.errors import ClientError
 
+# Ensure the app starts with the sidebar open and clear
 st.set_page_config(
     page_title="Savan Audio Lab",
     page_icon="🎙️",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="expanded"
 )
 
 # Initialize fundamental structural session state parameters
@@ -19,48 +20,38 @@ if "chat_history" not in st.session_state:
 if "processed_hashes" not in st.session_state:
     st.session_state.processed_hashes = set()
 
+# CSS that matches your dark mode style WITHOUT hiding structural elements
 st.markdown("""
 <style>
-/* Hides default top decorations and the right side dropdown menu, but preserves the left side toggle chevron icon */
-[data-testid="stHeader"] {
-    background-color: transparent !important;
-}
-[data-testid="stHeader"] > div:first-child {
-    display: none !important;
-}
-[data-testid="stHeader"] button[dir="ltr"] {
-    color: #f3f4f6 !important; /* Forces the default menu chevron button to stay bright white/gray */
-}
-footer { visibility: hidden; display: none; }
-
+/* Style the main application body */
 .stApp {
     background: radial-gradient(circle at top right, #1f1b2e, #0f0c15 60%);
     color: #f3f4f6;
     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+/* Style the sidebar wrapper */
 [data-testid="stSidebar"] {
     background-color: #12101a !important;
     border-right: 1px solid rgba(255,255,255,0.03) !important;
-    width: 280px !important;
 }
 
+/* Style the navigation links radio group */
 div[data-testid="stRadio"] > label {
     display: none;
 }
-
 div[data-testid="stRadio"] [data-testid="stMarkdownContainer"] p {
     font-size: 1rem !important;
     color: #9ca3af !important;
     font-weight: 500 !important;
     padding: 6px 0px;
 }
-
 div[data-testid="stRadio"] input[type="radio"]:checked + div p {
     color: #ec4899 !important;
     font-weight: 600 !important;
 }
 
+/* Info Cards */
 .hero-card {
     background: linear-gradient(135deg, #1d182b, #110e1a);
     border: 1px solid rgba(255,255,255,0.04);
@@ -93,6 +84,7 @@ div[data-testid="stRadio"] input[type="radio"]:checked + div p {
     color: #d1d5db;
 }
 
+/* Chat boxes styling */
 div[data-testid="stChatMessage"] {
     background-color: rgba(255, 255, 255, 0.06) !important; 
     border: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -129,6 +121,9 @@ div[data-testid="stChatMessage"] p {
     transform: translateY(-2px);
     color: #ffffff !important;
 }
+
+/* Hide Streamlit default footer but leave header button accessible */
+footer { visibility: hidden; display: none; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -171,6 +166,7 @@ def safe_generate_audio(audio_bytes):
         st.error(f"Unexpected Pipeline Error: {str(e)}")
         return None
 
+# Sidebar Contents
 with st.sidebar:
     st.markdown('<h2 style="color:#fff; font-weight:800; margin-bottom:2rem; letter-spacing:-1px;">✨ Savan Audio Lab</h2>', unsafe_allow_html=True)
     menu_selection = st.radio("Navigation Links", ["🏠 Home Workspace", "📖 Engineering Guide", "ℹ️ About Application"])
@@ -190,6 +186,7 @@ with st.sidebar:
             short_text = msg["text"][:35] + "..." if len(msg["text"]) > 35 else msg["text"]
             st.markdown(f'<div class="sidebar-history-box"><strong>{role_label}:</strong> {short_text}</div>', unsafe_allow_html=True)
 
+# Main App Navigation Router
 if menu_selection == "🏠 Home Workspace":
     st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0;">Voice Workspace</h1>', unsafe_allow_html=True)
     st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">Use your voice or type below to interact with the audio asset platform.</p>', unsafe_allow_html=True)
@@ -202,17 +199,14 @@ if menu_selection == "🏠 Home Workspace":
 
     st.markdown('<br><h2 style="font-weight:800; margin-bottom:1rem; letter-spacing:-0.5px;">Voice + Chat Input</h2>', unsafe_allow_html=True)
 
-    # Render History Layout cleanly
     for message in st.session_state.chat_history:
         avatar_icon = "👤" if message["role"] == "user" else "✨"
         with st.chat_message(message["role"], avatar=avatar_icon):
             st.markdown(message["text"])
 
-    # UI Inputs outside of forms to prevent layout clipping
     voice_audio = st.audio_input("Record a voice message", sample_rate=16000)
     text_input = st.chat_input("Message Savan Audio Lab...")
 
-    # --- PERMANENT HASH LOCK EXECUTION ---
     if text_input:
         text_hash = hashlib.md5(text_input.encode()).hexdigest()
         if text_hash not in st.session_state.processed_hashes:
