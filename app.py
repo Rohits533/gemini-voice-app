@@ -99,10 +99,40 @@ div[data-testid="stChatMessage"] {
     margin-bottom: 0.75rem !important;
 }
 
-/* Ensures chat text stands out brightly against the background workspace layout */
 div[data-testid="stChatMessage"] p {
     color: #f3f4f6 !important;
     font-size: 0.95rem !important;
+}
+
+/* ==========================================
+   MODERN GRADIENT PORTFOLIO BUTTON STYLE 
+   ========================================== */
+.modern-portfolio-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+    color: #ffffff !important;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 12px 32px;
+    border-radius: 30px;
+    text-decoration: none !important;
+    box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 5px;
+}
+
+.modern-portfolio-btn:hover {
+    background: linear-gradient(135deg, #f43f5e 0%, #a855f7 100%);
+    box-shadow: 0 6px 20px rgba(236, 72, 153, 0.5), 0 0 10px rgba(139, 92, 246, 0.3);
+    transform: translateY(-2px);
+    color: #ffffff !important;
+}
+
+.modern-portfolio-btn:active {
+    transform: translateY(0);
 }
 </style>
 """, unsafe_allow_html=True)
@@ -346,4 +376,8 @@ elif menu_selection == "ℹ️ About Application":
         </div>
     """, unsafe_allow_html=True)
 
-    st.link_button("Portfolio", "https://rohits533.github.io")
+    # Render upgraded, glowing custom gradient portfolio link button
+    st.markdown(
+        '<a href="https://rohits533.github.io" target="_blank" class="modern-portfolio-btn">✨ View Portfolio</a>',
+        unsafe_allow_html=True
+    )
