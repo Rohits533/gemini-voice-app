@@ -21,27 +21,43 @@ if "processed_hashes" not in st.session_state:
 
 st.markdown("""
 <style>
-/* 1. RESTORE AND MAKE THE SIDEBAR TOGGLE ARROW BRILLIANT NEON PINK */
+/* 1. COMPLETELY OVERRIDE STREAMLIT HEADER & FORCE BLAZING NEON PINK TOGGLE BUTTONS */
 [data-testid="stHeader"] {
-    background-color: #151122 !important; /* Perfectly matches your custom UI top bar */
+    background-color: #151122 !important; /* Blends flawlessly into your custom workspace app color */
     border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
 }
 
-/* Hard target the exact native arrow toggle buttons to make them pop out clearly */
+/* Hyper-aggressive selector to capture the sidebar chevron arrow in ALL states (open, closed, hovered, active) */
+div[data-testid="stHeader"] button,
 button[aria-label="Open sidebar"], 
 button[aria-label="Close sidebar"],
+button[aria-label="Open sidebar"] div,
+button[aria-label="Close sidebar"] div,
 button[aria-label="Open sidebar"] svg,
-button[aria-label="Close sidebar"] svg {
-    color: #ff4da6 !important;
-    fill: #ff4da6 !important;
-    stroke: #ff4da6 !important;
-    transform: scale(1.2) !important;
-    filter: drop-shadow(0px 0px 10px #ec4899) brightness(1.8) !important; /* Beautiful hot pink neon glow */
-    visibility: visible !important;
-    display: inline-flex !important;
+button[aria-label="Close sidebar"] svg,
+button[aria-label="Open sidebar"] path,
+button[aria-label="Close sidebar"] path,
+[data-testid="collapsedControl"] button,
+[data-testid="collapsedControl"] svg,
+[data-testid="collapsedControl"] path {
+    color: #ff007f !important;
+    fill: #ff007f !important;
+    stroke: #ff007f !important;
+    opacity: 1 !important;
+    transform: scale(1.3) !important;
+    /* Powerful neon pink bloom filter dropshadow */
+    filter: drop-shadow(0px 0px 12px #ff007f) brightness(2) !important; 
+    transition: all 0.2s ease-in-out !important;
 }
 
-/* Ensure other secondary header decoration items look cohesive */
+/* Brighten up even more on hover so you always know it's clickable */
+button[aria-label="Open sidebar"]:hover, 
+button[aria-label="Close sidebar"]:hover {
+    filter: drop-shadow(0px 0px 18px #ff007f) brightness(2.5) !important;
+    transform: scale(1.4) !important;
+}
+
+/* Cohesive coloration for secondary header elements like standard links */
 [data-testid="stHeader"] a,
 [data-testid="stHeader"] a svg {
     color: #9ca3af !important;
@@ -208,7 +224,7 @@ with st.sidebar:
             short_text = msg["text"][:35] + "..." if len(msg["text"]) > 35 else msg["text"]
             st.markdown(f'<div class="sidebar-history-box"><strong>{role_label}:</strong> {short_text}</div>', unsafe_allow_html=True)
 
-# Main Application Router
+# Main Application Pages Router
 if menu_selection == "🏠 Home Workspace":
     st.markdown('<h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom:0; padding-top:15px;">Voice Workspace</h1>', unsafe_allow_html=True)
     st.markdown('<p style="color:#9ca3af; font-size:1.1rem; margin-bottom:2.5rem;">Use your voice or type below to interact with the audio asset platform.</p>', unsafe_allow_html=True)
