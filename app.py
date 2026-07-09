@@ -14,6 +14,10 @@ st.set_page_config(
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
+# Initialize state to track processed audio files and prevent API request loops
+if "last_processed_audio" not in st.session_state:
+    st.session_state.last_processed_audio = None
+
 st.markdown("""
 <style>
 [data-testid="stHeader"], footer { visibility: hidden; display: none; }
@@ -218,17 +222,18 @@ if menu_selection == "🏠 Home Workspace":
         unsafe_allow_html=True,
     )
 
-    voice_audio = st.audio_input("Record a voice message", sample_rate=16000)
-    text_input = st.chat_input("Message Savan Audio Lab...")
-
+    # Output history first so things render smoothly
     for message in st.session_state.chat_history:
         avatar_icon = "👤" if message["role"] == "user" else "✨"
         with st.chat_message(message["role"], avatar=avatar_icon):
             st.markdown(message["text"])
 
+    voice_audio = st.audio_input("Record a voice message", sample_rate=16000)
+    text_input = st.chat_input("Message Savan Audio Lab...")
+
+    # --- TEXT INPUT HANDLER ---
     if text_input:
         st.session_state.chat_history.append({"role": "user", "text": text_input})
-
         with st.chat_message("user", avatar="👤"):
             st.markdown(text_input)
 
@@ -241,22 +246,29 @@ if menu_selection == "🏠 Home Workspace":
                 st.session_state.chat_history.append({"role": "assistant", "text": response_content})
                 st.rerun()
 
+    # --- VOICE INPUT HANDLER (CRITICAL FIX APPLIED HERE) ---
     elif voice_audio is not None:
         audio_bytes = voice_audio.read()
-        st.audio(audio_bytes, format="audio/wav")
+        
+        # Only query Gemini if this is a brand-new audio sample
+        if st.session_state.last_processed_audio != audio_bytes:
+            
+            with st.chat_message("user", avatar="👤"):
+                st.markdown("🎤 Voice question recorded")
+                st.audio(audio_bytes, format="audio/wav")
 
-        with st.chat_message("user", avatar="👤"):
-            st.markdown("🎤 Voice question recorded")
+            with st.chat_message("assistant", avatar="✨"):
+                with st.spinner("Gemini is listening..."):
+                    response_content = safe_generate_audio(audio_bytes)
 
-        with st.chat_message("assistant", avatar="✨"):
-            with st.spinner("Gemini is listening..."):
-                response_content = safe_generate_audio(audio_bytes)
-
-            if response_content:
-                st.markdown(response_content)
-                st.session_state.chat_history.append({"role": "user", "text": "🎤 Voice question recorded"})
-                st.session_state.chat_history.append({"role": "assistant", "text": response_content})
-                st.rerun()
+                if response_content:
+                    st.markdown(response_content)
+                    st.session_state.chat_history.append({"role": "user", "text": "🎤 Voice question recorded"})
+                    st.session_state.chat_history.append({"role": "assistant", "text": response_content})
+                    
+                    # Store audio file structure inside session state to halt infinite loops
+                    st.session_state.last_processed_audio = audio_bytes
+                    st.rerun()
 
 elif menu_selection == "📖 Engineering Guide":
     st.markdown(
